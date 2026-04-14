@@ -57,7 +57,9 @@ OPERATIONS
         PRE
             rv : active_res &                                           /* Must be active */
             res_room(rv) /: dom(occ_rooms) &                            /* Room not occupied */
-            res_room(rv) /: dom(occ_dates)                              /* Theorem: follows from inv4 */
+            res_room(rv) /: dom(occ_dates) &                            /* Theorem: follows from inv4 */
+            !(r).(r : active_res & r /= rv & res_room(r) = res_room(rv) /* Theorem: follows from inv5 */
+                  => res_dates(r) /\ res_dates(rv) = {})
         THEN
             active_res := active_res - {rv} ||                          /* Remove reservation */
             occ_rooms := occ_rooms \/ {res_room(rv) |-> res_customer(rv)} ||  /* Room becomes occupied */

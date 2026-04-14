@@ -79,6 +79,8 @@ EVENTS
         grd1: rv ∈ active_res                      /* Must be an active reservation */
         grd2: res_room(rv) ∉ dom(occ_rooms)        /* Room must not be currently occupied */
         grd3: res_room(rv) ∉ dom(occ_dates)        /* Theorem: follows from grd2 and inv4 */
+        grd4: ∀r · r ∈ active_res ∧ r ≠ rv ∧ res_room(r) = res_room(rv)   /* Theorem: follows from inv5 and grd1 */
+                  ⇒ res_dates(r) ∩ res_dates(rv) = ∅                       /* Helps prover with inv6 preservation */
     THEN
         act1: active_res ≔ active_res ∖ {rv}                                   /* R8: Remove reservation from system */
         act2: occ_rooms ≔ occ_rooms ∪ {res_room(rv) ↦ res_customer(rv)}        /* R8: Room becomes occupied */

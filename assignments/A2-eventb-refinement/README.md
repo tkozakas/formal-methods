@@ -54,6 +54,9 @@ Unlike Assignment 1, this model does not track a `vacant_rooms` set. A room is i
 | inv5 | No overlapping reservation dates for the same room | R5 |
 | inv6 | No overlapping reservation/occupied dates for the same room | R5, R11 |
 
+### Theorem Guards for Auto-Prover
+`CheckInWithReservation` includes a theorem guard `grd4` that explicitly states the non-overlap of dates between remaining active reservations and the checked-in reservation's dates. Although derivable from `inv5`, this guard provides the intermediate hypothesis Rodin's auto-prover needs to discharge the `inv6` preservation proof obligation — the prover cannot automatically instantiate the universally quantified `inv5` to synthesize the required case split.
+
 ## Verification
 
 Proof obligations can be discharged in the Rodin platform. For automated model checking with ProB CLI:
