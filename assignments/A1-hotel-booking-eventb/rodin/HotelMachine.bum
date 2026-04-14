@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<org.eventb.core.machineFile org.eventb.core.configuration="org.eventb.core.fwd" version="5">
+<org.eventb.core.seesContext name="'" org.eventb.core.target="HotelContext"/>
+
+<!-- VARIABLES -->
+<org.eventb.core.variable name="(" org.eventb.core.comment="Rooms with no reservation or guest" org.eventb.core.identifier="vacant_rooms"/>
+<org.eventb.core.variable name=")" org.eventb.core.comment="Maps reserved rooms to their customers" org.eventb.core.identifier="reserved_rooms"/>
+<org.eventb.core.variable name="*" org.eventb.core.comment="Maps occupied rooms to their checked-in customers" org.eventb.core.identifier="occupied_rooms"/>
+
+<!-- INVARIANTS -->
+<org.eventb.core.invariant name="+" org.eventb.core.comment="Vacant rooms are a subset of all rooms" org.eventb.core.label="inv1" org.eventb.core.predicate="vacant_rooms ⊆ ROOM"/>
+<org.eventb.core.invariant name="," org.eventb.core.comment="Each room reserved by at most one customer (partial function)" org.eventb.core.label="inv2" org.eventb.core.predicate="reserved_rooms ∈ ROOM ⇸ CUSTOMER"/>
+<org.eventb.core.invariant name="-" org.eventb.core.comment="Each room occupied by at most one customer (partial function)" org.eventb.core.label="inv3" org.eventb.core.predicate="occupied_rooms ∈ ROOM ⇸ CUSTOMER"/>
+<org.eventb.core.invariant name="." org.eventb.core.comment="R10: Vacant and reserved rooms are disjoint" org.eventb.core.label="inv4" org.eventb.core.predicate="vacant_rooms ∩ dom(reserved_rooms) = ∅"/>
+<org.eventb.core.invariant name="/" org.eventb.core.comment="R10: Vacant and occupied rooms are disjoint" org.eventb.core.label="inv5" org.eventb.core.predicate="vacant_rooms ∩ dom(occupied_rooms) = ∅"/>
+<org.eventb.core.invariant name="0" org.eventb.core.comment="R8: Every occupied room is reserved by the same customer" org.eventb.core.label="inv6" org.eventb.core.predicate="occupied_rooms ⊆ reserved_rooms"/>
+
+<!-- INITIALISATION: All rooms vacant, no reservations, no occupations -->
+<org.eventb.core.event name="1" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION">
+<org.eventb.core.action name="'" org.eventb.core.assignment="vacant_rooms ≔ ROOM" org.eventb.core.comment="All rooms start vacant" org.eventb.core.label="act1"/>
+<org.eventb.core.action name="(" org.eventb.core.assignment="reserved_rooms ≔ ∅" org.eventb.core.comment="No reservations initially" org.eventb.core.label="act2"/>
+<org.eventb.core.action name=")" org.eventb.core.assignment="occupied_rooms ≔ ∅" org.eventb.core.comment="No occupations initially" org.eventb.core.label="act3"/>
+</org.eventb.core.event>
+
+<!-- ReserveRoom: A customer reserves a vacant room (R3, R4) -->
+<org.eventb.core.event name="2" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="ReserveRoom">
+<org.eventb.core.parameter name="'" org.eventb.core.comment="Room to reserve" org.eventb.core.identifier="rr"/>
+<org.eventb.core.parameter name="(" org.eventb.core.comment="Customer making reservation" org.eventb.core.identifier="cc"/>
+<org.eventb.core.guard name=")" org.eventb.core.comment="R3: Only vacant rooms can be reserved" org.eventb.core.label="grd1" org.eventb.core.predicate="rr ∈ vacant_rooms"/>
+<org.eventb.core.guard name="*" org.eventb.core.comment="Must be a valid customer" org.eventb.core.label="grd2" org.eventb.core.predicate="cc ∈ CUSTOMER"/>
+<org.eventb.core.guard name="+" org.eventb.core.comment="Room not already reserved" org.eventb.core.label="grd3" org.eventb.core.predicate="rr ∉ dom(reserved_rooms)"/>
+<org.eventb.core.guard name="," org.eventb.core.comment="Room not already occupied" org.eventb.core.label="grd4" org.eventb.core.predicate="rr ∉ dom(occupied_rooms)"/>
+<org.eventb.core.action name="-" org.eventb.core.assignment="vacant_rooms ≔ vacant_rooms ∖ {rr}" org.eventb.core.comment="Remove from vacant set" org.eventb.core.label="act1"/>
+<org.eventb.core.action name="." org.eventb.core.assignment="reserved_rooms ≔ reserved_rooms ∪ {rr ↦ cc}" org.eventb.core.comment="R4: Store room→customer reservation" org.eventb.core.label="act2"/>
+</org.eventb.core.event>
+
+<!-- CancelReservation: Cancel a reservation, room becomes vacant (R5, R6, R11) -->
+<org.eventb.core.event name="3" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="CancelReservation">
+<org.eventb.core.parameter name="'" org.eventb.core.comment="Room to cancel" org.eventb.core.identifier="rr"/>
+<org.eventb.core.guard name="(" org.eventb.core.comment="R5: Room must have a reservation" org.eventb.core.label="grd1" org.eventb.core.predicate="rr ∈ dom(reserved_rooms)"/>
+<org.eventb.core.guard name=")" org.eventb.core.comment="Cannot cancel if guest is checked in" org.eventb.core.label="grd2" org.eventb.core.predicate="rr ∉ dom(occupied_rooms)"/>
+<org.eventb.core.guard name="*" org.eventb.core.comment="Room is not vacant (consistency)" org.eventb.core.label="grd3" org.eventb.core.predicate="rr ∉ vacant_rooms"/>
+<org.eventb.core.action name="+" org.eventb.core.assignment="reserved_rooms ≔ {rr} ⩤ reserved_rooms" org.eventb.core.comment="R11: Delete reservation data" org.eventb.core.label="act1"/>
+<org.eventb.core.action name="," org.eventb.core.assignment="vacant_rooms ≔ vacant_rooms ∪ {rr}" org.eventb.core.comment="R6: Room becomes vacant again" org.eventb.core.label="act2"/>
+</org.eventb.core.event>
+
+<!-- CheckIn: Customer checks into their reserved room (R7, R8) -->
+<org.eventb.core.event name="4" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="CheckIn">
+<org.eventb.core.parameter name="'" org.eventb.core.comment="Room to check into" org.eventb.core.identifier="rr"/>
+<org.eventb.core.parameter name="(" org.eventb.core.comment="Customer checking in" org.eventb.core.identifier="cc"/>
+<org.eventb.core.guard name=")" org.eventb.core.comment="R8: Room must be reserved by this customer" org.eventb.core.label="grd1" org.eventb.core.predicate="rr ↦ cc ∈ reserved_rooms"/>
+<org.eventb.core.guard name="*" org.eventb.core.comment="Room not already occupied" org.eventb.core.label="grd2" org.eventb.core.predicate="rr ∉ dom(occupied_rooms)"/>
+<org.eventb.core.guard name="+" org.eventb.core.comment="Room is not vacant (it is reserved)" org.eventb.core.label="grd3" org.eventb.core.predicate="rr ∉ vacant_rooms"/>
+<org.eventb.core.action name="," org.eventb.core.assignment="occupied_rooms ≔ occupied_rooms ∪ {rr ↦ cc}" org.eventb.core.comment="R7: Room status becomes occupied" org.eventb.core.label="act1"/>
+</org.eventb.core.event>
+
+<!-- CheckOut: Guest checks out, room becomes vacant, all data deleted (R9, R11) -->
+<org.eventb.core.event name="5" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="CheckOut">
+<org.eventb.core.parameter name="'" org.eventb.core.comment="Room to check out of" org.eventb.core.identifier="rr"/>
+<org.eventb.core.guard name="(" org.eventb.core.comment="Room must be occupied" org.eventb.core.label="grd1" org.eventb.core.predicate="rr ∈ dom(occupied_rooms)"/>
+<org.eventb.core.guard name=")" org.eventb.core.comment="Room must be reserved (guaranteed by inv6)" org.eventb.core.label="grd2" org.eventb.core.predicate="rr ∈ dom(reserved_rooms)"/>
+<org.eventb.core.guard name="*" org.eventb.core.comment="Room is not vacant (consistency)" org.eventb.core.label="grd3" org.eventb.core.predicate="rr ∉ vacant_rooms"/>
+<org.eventb.core.action name="+" org.eventb.core.assignment="occupied_rooms ≔ {rr} ⩤ occupied_rooms" org.eventb.core.comment="Remove from occupied" org.eventb.core.label="act1"/>
+<org.eventb.core.action name="," org.eventb.core.assignment="reserved_rooms ≔ {rr} ⩤ reserved_rooms" org.eventb.core.comment="R11: Delete reservation data" org.eventb.core.label="act2"/>
+<org.eventb.core.action name="-" org.eventb.core.assignment="vacant_rooms ≔ vacant_rooms ∪ {rr}" org.eventb.core.comment="R9: Room becomes vacant again" org.eventb.core.label="act3"/>
+</org.eventb.core.event>
+</org.eventb.core.machineFile>

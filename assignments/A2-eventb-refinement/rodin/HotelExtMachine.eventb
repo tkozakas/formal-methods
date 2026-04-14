@@ -1,0 +1,118 @@
+CONTEXT HotelExtContext
+
+SETS
+    CUSTOMER        /* Set of all possible customers */
+    ROOM            /* Set of all hotel rooms */
+    DATE            /* Set of all possible dates */
+    RESERVATION     /* Abstract set of all possible reservations */
+
+CONSTANTS
+    res_room        /* Extracts the room from a reservation */
+    res_customer    /* Extracts the customer from a reservation */
+    res_dates       /* Extracts the reserved dates from a reservation */
+
+AXIOMS
+    axm1: res_room ∈ RESERVATION → ROOM                /* Each reservation is for exactly one room */
+    axm2: res_customer ∈ RESERVATION → CUSTOMER         /* Each reservation is for exactly one customer */
+    axm3: res_dates ∈ RESERVATION → ℙ1(DATE)            /* Each reservation has a non-empty set of dates */
+
+END
+
+MACHINE HotelExtMachine
+SEES HotelExtContext
+
+VARIABLES
+    active_res      /* Currently active reservations (subset of RESERVATION) */
+    occ_rooms       /* Maps occupied rooms to their checked-in customers */
+    occ_dates       /* Maps occupied rooms to their staying dates */
+
+INVARIANTS
+    inv1: active_res ⊆ RESERVATION                                     /* R3: Active reservations are a subset of all reservations */
+    inv2: occ_rooms ∈ ROOM ⇸ CUSTOMER                                  /* R9: Each occupied room has at most one customer (partial function) */
+    inv3: occ_dates ∈ ROOM ⇸ ℙ1(DATE)                                  /* R9: Each occupied room has a non-empty set of dates */
+    inv4: dom(occ_rooms) = dom(occ_dates)                               /* Consistency: occupied rooms track both customer and dates */
+    inv5: ∀r1,r2 · r1 ∈ active_res ∧ r2 ∈ active_res ∧ r1 ≠ r2       /* R5: Reservation dates cannot overlap for the same room */
+              ∧ res_room(r1) = res_room(r2)
+              ⇒ res_dates(r1) ∩ res_dates(r2) = ∅
+    inv6: ∀r · r ∈ active_res ∧ res_room(r) ∈ dom(occ_dates)           /* R5,R11: Reservation dates cannot overlap with occupied dates */
+              ⇒ res_dates(r) ∩ occ_dates(res_room(r)) = ∅              /*         for the same room */
+
+EVENTS
+
+    INITIALISATION
+    BEGIN
+        act1: active_res ≔ ∅           /* No reservations initially */
+        act2: occ_rooms ≔ ∅            /* No occupied rooms initially */
+        act3: occ_dates ≔ ∅            /* No occupied dates initially */
+    END
+
+    /* R1, R4, R5: A customer makes a reservation */
+    EVENT ReserveRoom
+    ANY
+        rv      /* The reservation being made */
+    WHERE
+        grd1: rv ∈ RESERVATION                                                          /* Must be a valid reservation */
+        grd2: rv ∉ active_res                                                            /* Not already an active reservation */
+        grd3: ∀r · r ∈ active_res ∧ res_room(r) = res_room(rv)                          /* R5: Dates don't overlap with existing */
+                  ⇒ res_dates(r) ∩ res_dates(rv) = ∅                                    /*     reservations for the same room */
+        grd4: res_room(rv) ∈ dom(occ_dates) ⇒ res_dates(rv) ∩ occ_dates(res_room(rv)) = ∅  /* R5: Dates don't overlap with */
+                                                                                             /*     occupied dates for the same room */
+    THEN
+        act1: active_res ≔ active_res ∪ {rv}       /* Add to active reservations */
+    END
+
+    /* R6, R7: Cancel a reservation */
+    EVENT CancelReservation
+    ANY
+        rv      /* The reservation to cancel */
+    WHERE
+        grd1: rv ∈ active_res          /* R6: Must be an active reservation */
+    THEN
+        act1: active_res ≔ active_res ∖ {rv}       /* R7: Remove reservation from the system */
+    END
+
+    /* R8, R10: Customer checks in with an existing reservation */
+    EVENT CheckInWithReservation
+    ANY
+        rv      /* The reservation for check-in */
+    WHERE
+        grd1: rv ∈ active_res                      /* Must be an active reservation */
+        grd2: res_room(rv) ∉ dom(occ_rooms)        /* Room must not be currently occupied */
+        grd3: res_room(rv) ∉ dom(occ_dates)        /* Theorem: follows from grd2 and inv4 */
+    THEN
+        act1: active_res ≔ active_res ∖ {rv}                                   /* R8: Remove reservation from system */
+        act2: occ_rooms ≔ occ_rooms ∪ {res_room(rv) ↦ res_customer(rv)}        /* R8: Room becomes occupied */
+        act3: occ_dates ≔ occ_dates ∪ {res_room(rv) ↦ res_dates(rv)}           /* R10: Copy dates from reservation */
+    END
+
+    /* R12: Customer checks in without a reservation */
+    EVENT CheckInWithoutReservation
+    ANY
+        rr      /* Room to check into */
+        cc      /* Customer checking in */
+        dd      /* Dates of stay */
+    WHERE
+        grd1: rr ∈ ROOM                                                    /* Must be a valid room */
+        grd2: cc ∈ CUSTOMER                                                /* Must be a valid customer */
+        grd3: dd ∈ ℙ1(DATE)                                                /* Must be a non-empty set of dates */
+        grd4: rr ∉ dom(occ_rooms)                                          /* R12: Room must not be occupied */
+        grd5: ∀r · r ∈ active_res ∧ res_room(r) = rr ⇒ res_dates(r) ∩ dd = ∅  /* R12: Dates don't overlap with reservations */
+        grd6: rr ∉ dom(occ_dates)                                          /* Theorem: follows from grd4 and inv4 */
+    THEN
+        act1: occ_rooms ≔ occ_rooms ∪ {rr ↦ cc}           /* Room becomes occupied */
+        act2: occ_dates ≔ occ_dates ∪ {rr ↦ dd}            /* Store staying dates */
+    END
+
+    /* R13: Customer checks out */
+    EVENT CheckOut
+    ANY
+        rr      /* Room to check out of */
+    WHERE
+        grd1: rr ∈ dom(occ_rooms)                  /* Room must be occupied */
+        grd2: rr ∈ dom(occ_dates)                  /* Theorem: follows from grd1 and inv4 */
+    THEN
+        act1: occ_rooms ≔ {rr} ⩤ occ_rooms         /* R13: Remove customer info */
+        act2: occ_dates ≔ {rr} ⩤ occ_dates          /* R13: Remove date info */
+    END
+
+END

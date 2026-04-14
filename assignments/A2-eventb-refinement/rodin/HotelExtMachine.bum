@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<org.eventb.core.machineFile org.eventb.core.configuration="org.eventb.core.fwd" version="5">
+    <org.eventb.core.seesContext name="'" org.eventb.core.target="HotelExtContext"/>
+    <org.eventb.core.variable name="(" org.eventb.core.identifier="active_res"/>
+    <org.eventb.core.variable name=")" org.eventb.core.identifier="occ_rooms"/>
+    <org.eventb.core.variable name="*" org.eventb.core.identifier="occ_dates"/>
+    <org.eventb.core.invariant name="+" org.eventb.core.label="inv1" org.eventb.core.predicate="active_res ⊆ RESERVATION"/>
+    <org.eventb.core.invariant name="," org.eventb.core.label="inv2" org.eventb.core.predicate="occ_rooms ∈ ROOM ⇸ CUSTOMER"/>
+    <org.eventb.core.invariant name="-" org.eventb.core.label="inv3" org.eventb.core.predicate="occ_dates ∈ ROOM ⇸ ℙ1(DATE)"/>
+    <org.eventb.core.invariant name="." org.eventb.core.label="inv4" org.eventb.core.predicate="dom(occ_rooms) = dom(occ_dates)"/>
+    <org.eventb.core.invariant name="/" org.eventb.core.label="inv5" org.eventb.core.predicate="∀r1,r2 · r1 ∈ active_res ∧ r2 ∈ active_res ∧ r1 ≠ r2 ∧ res_room(r1) = res_room(r2) ⇒ res_dates(r1) ∩ res_dates(r2) = ∅"/>
+    <org.eventb.core.invariant name="0" org.eventb.core.label="inv6" org.eventb.core.predicate="∀r · r ∈ active_res ∧ res_room(r) ∈ dom(occ_dates) ⇒ res_dates(r) ∩ occ_dates(res_room(r)) = ∅"/>
+
+    <org.eventb.core.event name="2" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION">
+        <org.eventb.core.action name="'" org.eventb.core.assignment="active_res ≔ ∅" org.eventb.core.label="act1"/>
+        <org.eventb.core.action name="(" org.eventb.core.assignment="occ_rooms ≔ ∅" org.eventb.core.label="act2"/>
+        <org.eventb.core.action name=")" org.eventb.core.assignment="occ_dates ≔ ∅" org.eventb.core.label="act3"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="3" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="ReserveRoom">
+        <org.eventb.core.parameter name="'" org.eventb.core.identifier="rv"/>
+        <org.eventb.core.guard name="(" org.eventb.core.label="grd1" org.eventb.core.predicate="rv ∈ RESERVATION"/>
+        <org.eventb.core.guard name=")" org.eventb.core.label="grd2" org.eventb.core.predicate="rv ∉ active_res"/>
+        <org.eventb.core.guard name="*" org.eventb.core.label="grd3" org.eventb.core.predicate="∀r · r ∈ active_res ∧ res_room(r) = res_room(rv) ⇒ res_dates(r) ∩ res_dates(rv) = ∅"/>
+        <org.eventb.core.guard name="+" org.eventb.core.label="grd4" org.eventb.core.predicate="res_room(rv) ∈ dom(occ_dates) ⇒ res_dates(rv) ∩ occ_dates(res_room(rv)) = ∅"/>
+        <org.eventb.core.action name="," org.eventb.core.assignment="active_res ≔ active_res ∪ {rv}" org.eventb.core.label="act1"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="4" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="CancelReservation">
+        <org.eventb.core.parameter name="'" org.eventb.core.identifier="rv"/>
+        <org.eventb.core.guard name="(" org.eventb.core.label="grd1" org.eventb.core.predicate="rv ∈ active_res"/>
+        <org.eventb.core.action name=")" org.eventb.core.assignment="active_res ≔ active_res ∖ {rv}" org.eventb.core.label="act1"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="5" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="CheckInWithReservation">
+        <org.eventb.core.parameter name="'" org.eventb.core.identifier="rv"/>
+        <org.eventb.core.guard name="(" org.eventb.core.label="grd1" org.eventb.core.predicate="rv ∈ active_res"/>
+        <org.eventb.core.guard name=")" org.eventb.core.label="grd2" org.eventb.core.predicate="res_room(rv) ∉ dom(occ_rooms)"/>
+        <org.eventb.core.guard name="0" org.eventb.core.label="grd3" org.eventb.core.predicate="res_room(rv) ∉ dom(occ_dates)" org.eventb.core.theorem="true"/>
+        <org.eventb.core.action name="*" org.eventb.core.assignment="active_res ≔ active_res ∖ {rv}" org.eventb.core.label="act1"/>
+        <org.eventb.core.action name="+" org.eventb.core.assignment="occ_rooms ≔ occ_rooms ∪ {res_room(rv) ↦ res_customer(rv)}" org.eventb.core.label="act2"/>
+        <org.eventb.core.action name="," org.eventb.core.assignment="occ_dates ≔ occ_dates ∪ {res_room(rv) ↦ res_dates(rv)}" org.eventb.core.label="act3"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="6" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="CheckInWithoutReservation">
+        <org.eventb.core.parameter name="'" org.eventb.core.identifier="rr"/>
+        <org.eventb.core.parameter name="(" org.eventb.core.identifier="cc"/>
+        <org.eventb.core.parameter name=")" org.eventb.core.identifier="dd"/>
+        <org.eventb.core.guard name="*" org.eventb.core.label="grd1" org.eventb.core.predicate="rr ∈ ROOM"/>
+        <org.eventb.core.guard name="+" org.eventb.core.label="grd2" org.eventb.core.predicate="cc ∈ CUSTOMER"/>
+        <org.eventb.core.guard name="," org.eventb.core.label="grd3" org.eventb.core.predicate="dd ∈ ℙ1(DATE)"/>
+        <org.eventb.core.guard name="-" org.eventb.core.label="grd4" org.eventb.core.predicate="rr ∉ dom(occ_rooms)"/>
+        <org.eventb.core.guard name="." org.eventb.core.label="grd5" org.eventb.core.predicate="∀r · r ∈ active_res ∧ res_room(r) = rr ⇒ res_dates(r) ∩ dd = ∅"/>
+        <org.eventb.core.guard name="/" org.eventb.core.label="grd6" org.eventb.core.predicate="rr ∉ dom(occ_dates)" org.eventb.core.theorem="true"/>
+        <org.eventb.core.action name="0" org.eventb.core.assignment="occ_rooms ≔ occ_rooms ∪ {rr ↦ cc}" org.eventb.core.label="act1"/>
+        <org.eventb.core.action name="1" org.eventb.core.assignment="occ_dates ≔ occ_dates ∪ {rr ↦ dd}" org.eventb.core.label="act2"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="7" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="CheckOut">
+        <org.eventb.core.parameter name="'" org.eventb.core.identifier="rr"/>
+        <org.eventb.core.guard name="(" org.eventb.core.label="grd1" org.eventb.core.predicate="rr ∈ dom(occ_rooms)"/>
+        <org.eventb.core.guard name=")" org.eventb.core.label="grd2" org.eventb.core.predicate="rr ∈ dom(occ_dates)" org.eventb.core.theorem="true"/>
+        <org.eventb.core.action name="*" org.eventb.core.assignment="occ_rooms ≔ {rr} ⩤ occ_rooms" org.eventb.core.label="act1"/>
+        <org.eventb.core.action name="+" org.eventb.core.assignment="occ_dates ≔ {rr} ⩤ occ_dates" org.eventb.core.label="act2"/>
+    </org.eventb.core.event>
+</org.eventb.core.machineFile>

@@ -1,0 +1,89 @@
+CONTEXT HotelContext
+
+SETS
+    CUSTOMER    /* Set of all possible customers */
+    ROOM        /* Set of all hotel rooms */
+
+END
+
+MACHINE HotelMachine
+SEES HotelContext
+
+VARIABLES
+    vacant_rooms        /* Rooms with no reservation or guest */
+    reserved_rooms      /* Maps reserved rooms to their customers */
+    occupied_rooms      /* Maps occupied rooms to their checked-in customers */
+
+INVARIANTS
+    inv1: vacant_rooms ⊆ ROOM                              /* Vacant rooms are a subset of all rooms */
+    inv2: reserved_rooms ∈ ROOM ⇸ CUSTOMER                 /* Each room reserved by at most one customer (partial function) */
+    inv3: occupied_rooms ∈ ROOM ⇸ CUSTOMER                 /* Each room occupied by at most one customer (partial function) */
+    inv4: vacant_rooms ∩ dom(reserved_rooms) = ∅           /* R10: Vacant and reserved rooms are disjoint */
+    inv5: vacant_rooms ∩ dom(occupied_rooms) = ∅           /* R10: Vacant and occupied rooms are disjoint */
+    inv6: occupied_rooms ⊆ reserved_rooms                  /* R8: Every occupied room is reserved by the same customer */
+
+EVENTS
+
+    INITIALISATION
+    BEGIN
+        act1: vacant_rooms ≔ ROOM              /* All rooms start vacant */
+        act2: reserved_rooms ≔ ∅               /* No reservations initially */
+        act3: occupied_rooms ≔ ∅               /* No occupations initially */
+    END
+
+    /* R3, R4: A customer reserves a vacant room */
+    EVENT ReserveRoom
+    ANY
+        rr      /* Room to reserve */
+        cc      /* Customer making reservation */
+    WHERE
+        grd1: rr ∈ vacant_rooms                /* R3: Only vacant rooms can be reserved */
+        grd2: cc ∈ CUSTOMER                    /* Must be a valid customer */
+        grd3: rr ∉ dom(reserved_rooms)         /* Room not already reserved */
+        grd4: rr ∉ dom(occupied_rooms)         /* Room not already occupied */
+    THEN
+        act1: vacant_rooms ≔ vacant_rooms ∖ {rr}              /* Remove from vacant set */
+        act2: reserved_rooms ≔ reserved_rooms ∪ {rr ↦ cc}     /* R4: Store room→customer reservation */
+    END
+
+    /* R5, R6, R11: Cancel a reservation, room becomes vacant */
+    EVENT CancelReservation
+    ANY
+        rr      /* Room to cancel */
+    WHERE
+        grd1: rr ∈ dom(reserved_rooms)         /* R5: Room must have a reservation */
+        grd2: rr ∉ dom(occupied_rooms)         /* Cannot cancel if guest is checked in */
+        grd3: rr ∉ vacant_rooms                /* Room is not vacant (consistency) */
+    THEN
+        act1: reserved_rooms ≔ {rr} ⩤ reserved_rooms          /* R11: Delete reservation data */
+        act2: vacant_rooms ≔ vacant_rooms ∪ {rr}              /* R6: Room becomes vacant again */
+    END
+
+    /* R7, R8: Customer checks into their reserved room */
+    EVENT CheckIn
+    ANY
+        rr      /* Room to check into */
+        cc      /* Customer checking in */
+    WHERE
+        grd1: rr ↦ cc ∈ reserved_rooms         /* R8: Room must be reserved by this customer */
+        grd2: rr ∉ dom(occupied_rooms)         /* Room not already occupied */
+        grd3: rr ∉ vacant_rooms                /* Room is not vacant (it is reserved) */
+    THEN
+        act1: occupied_rooms ≔ occupied_rooms ∪ {rr ↦ cc}     /* R7: Room status becomes occupied */
+    END
+
+    /* R9, R11: Guest checks out, room becomes vacant, all data deleted */
+    EVENT CheckOut
+    ANY
+        rr      /* Room to check out of */
+    WHERE
+        grd1: rr ∈ dom(occupied_rooms)         /* Room must be occupied */
+        grd2: rr ∈ dom(reserved_rooms)         /* Room must be reserved (guaranteed by inv6) */
+        grd3: rr ∉ vacant_rooms                /* Room is not vacant */
+    THEN
+        act1: occupied_rooms ≔ {rr} ⩤ occupied_rooms          /* Remove from occupied */
+        act2: reserved_rooms ≔ {rr} ⩤ reserved_rooms          /* R11: Delete reservation data */
+        act3: vacant_rooms ≔ vacant_rooms ∪ {rr}              /* R9: Room becomes vacant again */
+    END
+
+END

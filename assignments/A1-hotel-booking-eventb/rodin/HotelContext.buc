@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<org.eventb.core.contextFile org.eventb.core.configuration="org.eventb.core.fwd" version="3">
+<org.eventb.core.carrierSet name="'" org.eventb.core.comment="Set of all possible customers" org.eventb.core.identifier="CUSTOMER"/>
+<org.eventb.core.carrierSet name="(" org.eventb.core.comment="Set of all hotel rooms" org.eventb.core.identifier="ROOM"/>
+</org.eventb.core.contextFile>
