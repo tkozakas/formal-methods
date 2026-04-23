@@ -49,13 +49,23 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # --- Check prerequisites -----------------------------------------------------
-if ! command -v java &>/dev/null; then
-    if [ -x "$HOME/.local/share/jdk17/bin/java" ]; then
-        export PATH="$HOME/.local/share/jdk17/bin:$PATH"
-    else
-        echo -e "${RED}ERROR: Java not found. Install JDK 11+ or set JAVA_HOME.${NC}"
-        exit 1
-    fi
+# Find a working Java (ProB needs 8+). /usr/bin/java on macOS may be a stub.
+if ! /usr/bin/java -version &>/dev/null; then
+    for candidate in \
+        "/opt/homebrew/opt/openjdk@17/bin" \
+        "/opt/homebrew/opt/openjdk@21/bin" \
+        "/opt/homebrew/opt/openjdk/bin" \
+        "$HOME/.local/share/jdk17/bin"; do
+        if [ -x "$candidate/java" ]; then
+            export PATH="$candidate:$PATH"
+            break
+        fi
+    done
+fi
+
+if ! java -version &>/dev/null; then
+    echo -e "${RED}ERROR: Java not found. Install JDK 11+ or set JAVA_HOME.${NC}"
+    exit 1
 fi
 
 if ! command -v probcli &>/dev/null; then
@@ -88,11 +98,11 @@ FAIL=0
 # every enabled operation in every state. For each state, it verifies all
 # invariants hold:
 #   inv1: active_res <: RESERVATION
-#   inv2: occ_rooms : ROOM +-> CUSTOMER
-#   inv3: occ_dates : ROOM +-> POW1(DATE)
-#   inv4: dom(occ_rooms) = dom(occ_dates)
-#   inv5: no overlapping reservation dates for same room
-#   inv6: no overlapping reservation/occupied dates for same room
+#   inv2: occupied   <: RESERVATION
+#   inv3: active_res /\ occupied = {}
+#   inv4: no overlapping reservation dates (same room)
+#   inv5: no overlap between reservation and occupied dates (same room)
+#   inv6: no overlapping occupied dates (same room)
 # ==============================================================================
 echo -e "${BOLD}[1/3] Model Checking — exhaustive state-space exploration${NC}"
 echo "      Exploring all reachable states from INITIALISATION..."
@@ -160,7 +170,7 @@ DL_OUTPUT=$(probcli "$MODEL" \
     -p TIME_OUT 30000 2>&1) || true
 
 if echo "$DL_OUTPUT" | grep -q "DEADLOCK"; then
-    echo "$DL_OUTPUT" | grep -E "STATE|active_res|occ_rooms|occ_dates|END"
+    echo "$DL_OUTPUT" | grep -E "STATE|active_res|occupied|END"
     echo -e "  Result: ${YELLOW}⚠️  DEADLOCK found (expected: abstract carrier sets may allow it)${NC}"
 else
     echo -e "  Result: ${GREEN}✅ PASS — no deadlocks${NC}"
