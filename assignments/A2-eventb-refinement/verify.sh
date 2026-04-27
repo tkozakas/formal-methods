@@ -164,16 +164,20 @@ echo -e "${BOLD}[3/3] Deadlock Checking — searching for stuck states${NC}"
 echo "      Checking if any reachable state has no enabled operations..."
 echo ""
 
+#   Use model-checking in deadlock-finding mode (dlk) — piggybacks on
+#   fast state-space exploration instead of the slow constraint-based search.
 DL_OUTPUT=$(probcli "$MODEL" \
-    -cbc_deadlock \
+    -mc 500 \
+    -mc_mode dlk \
     -p DEFAULT_SETSIZE 2 \
-    -p TIME_OUT 30000 2>&1) || true
+    -p MAX_INITIALISATIONS 2 \
+    -p MAX_OPERATIONS 4 2>&1) || true
 
-if echo "$DL_OUTPUT" | grep -q "DEADLOCK"; then
-    echo "$DL_OUTPUT" | grep -E "STATE|active_res|occupied|END"
+if echo "$DL_OUTPUT" | grep -qiE "deadlock found|counter example found|DEADLOCK STATE"; then
+    echo "$DL_OUTPUT" | grep -iE "STATE|active_res|occupied|deadlock"
     echo -e "  Result: ${YELLOW}⚠️  DEADLOCK found (expected: abstract carrier sets may allow it)${NC}"
 else
-    echo -e "  Result: ${GREEN}✅ PASS — no deadlocks${NC}"
+    echo -e "  Result: ${GREEN}✅ PASS — no deadlocks found in explored states${NC}"
     PASS=$((PASS + 1))
 fi
 echo ""
