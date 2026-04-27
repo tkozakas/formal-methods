@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<org.eventb.core.machineFile org.eventb.core.configuration="org.eventb.core.fwd" version="5">
+    <org.eventb.core.refinesMachine name="'" org.eventb.core.target="M0"/>
+    <org.eventb.core.seesContext name="(" org.eventb.core.target="C0"/>
+    <org.eventb.core.variable name=")" org.eventb.core.identifier="available"/>
+    <org.eventb.core.event name="*" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION">
+        <org.eventb.core.action name="'" org.eventb.core.assignment="available ≔ {fd · fd ∈ schedule ∣ fd ↦ seats(prj1(fd))}" org.eventb.core.label="act1"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="+" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="book">
+        <org.eventb.core.refinesEvent name="'" org.eventb.core.target="update_availability"/>
+        <org.eventb.core.parameter name="(" org.eventb.core.identifier="f"/>
+        <org.eventb.core.parameter name=")" org.eventb.core.identifier="d"/>
+        <org.eventb.core.parameter name="*" org.eventb.core.identifier="n"/>
+        <org.eventb.core.guard name="+" org.eventb.core.label="grd1" org.eventb.core.predicate="f ↦ d ∈ schedule"/>
+        <org.eventb.core.guard name="," org.eventb.core.label="grd2" org.eventb.core.predicate="n ∈ ℕ1"/>
+        <org.eventb.core.guard name="-" org.eventb.core.label="grd3" org.eventb.core.predicate="n ≤ available(f ↦ d)"/>
+        <org.eventb.core.witness name="." org.eventb.core.label="newval" org.eventb.core.predicate="newval = available(f ↦ d) − n"/>
+        <org.eventb.core.action name="/" org.eventb.core.assignment="available(f ↦ d) ≔ available(f ↦ d) − n" org.eventb.core.label="act1"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="," org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="cancel">
+        <org.eventb.core.refinesEvent name="'" org.eventb.core.target="update_availability"/>
+        <org.eventb.core.parameter name="(" org.eventb.core.identifier="f"/>
+        <org.eventb.core.parameter name=")" org.eventb.core.identifier="d"/>
+        <org.eventb.core.parameter name="*" org.eventb.core.identifier="n"/>
+        <org.eventb.core.guard name="+" org.eventb.core.label="grd1" org.eventb.core.predicate="f ↦ d ∈ schedule"/>
+        <org.eventb.core.guard name="," org.eventb.core.label="grd2" org.eventb.core.predicate="n ∈ ℕ1"/>
+        <org.eventb.core.guard name="-" org.eventb.core.label="grd3" org.eventb.core.predicate="available(f ↦ d) + n ≤ seats(f)"/>
+        <org.eventb.core.witness name="." org.eventb.core.label="newval" org.eventb.core.predicate="newval = available(f ↦ d) + n"/>
+        <org.eventb.core.action name="/" org.eventb.core.assignment="available(f ↦ d) ≔ available(f ↦ d) + n" org.eventb.core.label="act1"/>
+    </org.eventb.core.event>
+</org.eventb.core.machineFile>
