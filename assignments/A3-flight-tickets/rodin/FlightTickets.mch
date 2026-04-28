@@ -34,7 +34,7 @@ INVARIANT
     available : schedule --> NATURAL &
     !(f,d).(f|->d : schedule => available(f|->d) <= seats(f))
 INITIALISATION
-    available := %(f,d).(f|->d : schedule | seats(f))
+    available := schedule * {0}
 OPERATIONS
 
     /* ------------------------------------------------------------------------

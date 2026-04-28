@@ -3396,10 +3396,10 @@
         <org.eventb.core.prPred name="p11" org.eventb.core.predicate="o∈occupied∧res_room(o)=res_room(rv)⇒res_dates(o)∩res_dates(rv)=(∅ ⦂ ℙ(DATE))">
             <org.eventb.core.prIdent name="o" org.eventb.core.type="RESERVATION"/>
         </org.eventb.core.prPred>
-        <org.eventb.core.prReas name="r1" org.eventb.core.prRID="org.eventb.core.seqprover.typeRewrites:1"/>
         <org.eventb.core.prReas name="r2" org.eventb.core.prRID="org.eventb.core.seqprover.allI"/>
-        <org.eventb.core.prReas name="r3" org.eventb.core.prRID="org.eventb.core.seqprover.impI"/>
         <org.eventb.core.prReas name="r0" org.eventb.core.prRID="org.eventb.core.seqprover.autoRewritesL5:0"/>
+        <org.eventb.core.prReas name="r3" org.eventb.core.prRID="org.eventb.core.seqprover.impI"/>
+        <org.eventb.core.prReas name="r1" org.eventb.core.prRID="org.eventb.core.seqprover.typeRewrites:1"/>
     </org.eventb.core.prProof>
     <org.eventb.core.prProof name="CheckInWithoutReservation/grd3/WD" org.eventb.core.confidence="1000" org.eventb.core.prFresh="r" org.eventb.core.prGoal="p0" org.eventb.core.prHyps="p1,p2" org.eventb.core.prSets="DATE,RESERVATION,ROOM">
         <org.eventb.core.lang name="L"/>

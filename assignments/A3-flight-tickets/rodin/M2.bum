@@ -27,6 +27,6 @@
         <org.eventb.core.guard name="4" org.eventb.core.label="grd7" org.eventb.core.predicate="available(f1 ↦ d) ≥ 1 ∧ available(f2 ↦ d) ≥ 1"/>
         <org.eventb.core.guard name="5" org.eventb.core.label="grd8" org.eventb.core.predicate="max_total ∈ ℕ"/>
         <org.eventb.core.guard name="6" org.eventb.core.label="grd9" org.eventb.core.predicate="price(f1 ↦ d) + price(f2 ↦ d) ≤ max_total"/>
-        <org.eventb.core.action name="7" org.eventb.core.assignment="available ≔ available  {f1 ↦ d ↦ available(f1 ↦ d) − 1, f2 ↦ d ↦ available(f2 ↦ d) − 1}" org.eventb.core.label="act1"/>
+        <org.eventb.core.action name="7" org.eventb.core.assignment="available ≔ available  {f1 ↦ d ↦ available(f1 ↦ d) − 1, f2 ↦ d ↦ available(f2 ↦ d) − 1}" org.eventb.core.label="act1"/>
     </org.eventb.core.event>
 </org.eventb.core.machineFile>
