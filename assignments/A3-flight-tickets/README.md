@@ -119,9 +119,6 @@ event won't break any invariant. Example: `book(f, d, n)` requires
 - **`book_connecting`** could violate `available ≥ 0` on either leg →
   guard `available(f1↦d) ≥ 1 ∧ available(f2↦d) ≥ 1` blocks that.
 
-ProB's CBC checker formally proves each event preserves both invariants
-(see verification output below).
-
 ---
 
 ## 4. Verification
@@ -134,16 +131,45 @@ Run the checker (requires `probcli` and JDK 11+ on PATH):
 
 Three independent checks against `rodin/FlightTickets.mch`:
 
-1. **Model checking** — exhaustive state-space exploration; confirms no
-   reachable state violates the invariants.
-2. **CBC (constraint-based check)** — per-event constraint solver; confirms
-   each operation preserves the invariants under *any* valid input.
+1. **Model checking** — exhaustive state-space exploration within the bounds
+   `DEFAULT_SETSIZE=2`, `MAXINT=4`; confirms no reachable state in that
+   bounded universe violates the invariants.
+2. **CBC (constraint-based check)** — per-event constraint solver with
+   `DEFAULT_SETSIZE=1`, `MAXINT=2`; for each operation it tries to find a
+   pre-state + input that satisfies the guard and breaks an invariant. No
+   counterexample found ⇒ invariant preservation holds within those bounds.
 3. **Deadlock checking** — searches for stuck states; deadlocks are expected
    when ProB enumerates an empty schedule constant (no flights → no events
    enabled), so this step is informational.
 
 Why a `.mch` file? ProB CLI cannot parse Rodin's XML (`.bum`/`.buc`) directly;
 the classical-B `.mch` encodes the same sets, constants, variable, invariants
-and events of M2 in one file. The Rodin XML files remain the canonical model
-and can be opened in the Rodin GUI to discharge the proof obligations
-(refinement + invariant preservation) with the auto-prover.
+and events of M2 in one file.
+
+### Important: bounded checking ≠ formal proof
+
+`./verify.sh` runs **ProB**, which is a *model checker* and *constraint
+solver*. It establishes correctness **only for the finite bounded universe**
+it explored (sets of size ≤ 2, integers ≤ 4). This is strong evidence —
+no counterexample exists in that space — but it is **not** the same as
+discharging Event-B's proof obligations (POs) symbolically.
+
+The full Event-B POs (invariant preservation `evt/inv/INV`, refinement
+simulation `evt/act/SIM`, guard strengthening `evt/grd/GRD`, witness
+feasibility `evt/wfis/WFIS`, etc.) live in the Rodin `.bum`/`.buc` files
+and are discharged by Rodin's auto-prover / interactive prover inside the
+Rodin Platform GUI. **This step has not been performed here** — running
+the auto-prover requires opening the project in Rodin and is outside the
+scope of this CLI verification script.
+
+In summary:
+
+| What was done                                | What it proves                              |
+|----------------------------------------------|---------------------------------------------|
+| ProB model checking (bounded)                | No invariant violation in bounded states    |
+| ProB CBC (bounded)                           | Each event preserves invariants (bounded)   |
+| Rodin auto-prover on POs                     | *Not run* — would give symbolic guarantee   |
+
+The Rodin XML files are structurally complete and ready for the auto-prover;
+opening `rodin/` as a Rodin project would generate and (for most POs)
+automatically discharge them.
