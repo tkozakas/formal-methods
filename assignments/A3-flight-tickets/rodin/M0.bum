@@ -5,7 +5,7 @@
     <org.eventb.core.invariant name=")" org.eventb.core.label="inv1" org.eventb.core.predicate="available ∈ schedule → ℕ"/>
     <org.eventb.core.invariant name="*" org.eventb.core.label="inv2" org.eventb.core.predicate="∀f,d · f ↦ d ∈ schedule ⇒ available(f ↦ d) ≤ seats(f)"/>
     <org.eventb.core.event name="+" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION">
-        <org.eventb.core.action name="'" org.eventb.core.assignment="available ≔ {fd · fd ∈ schedule ∣ fd ↦ seats(prj1(fd))}" org.eventb.core.label="act1"/>
+        <org.eventb.core.action name="'" org.eventb.core.assignment="available ≔ (λf ↦ d · f ↦ d ∈ schedule ∣ seats(f))" org.eventb.core.label="act1"/>
     </org.eventb.core.event>
     <org.eventb.core.event name="," org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="update_availability">
         <org.eventb.core.parameter name="'" org.eventb.core.identifier="f"/>
