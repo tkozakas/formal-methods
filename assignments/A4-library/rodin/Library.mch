@@ -1,42 +1,42 @@
 MACHINE Library
-/* Library System — flat classical-B machine for ProB verification.
- * Mirrors the Event-B project (C0 context + M0 machine). */
+/* Bibliotekos sistema — plokščia klasikinė B mašina ProB verifikacijai.
+ * Atspindi Event-B projektą (C0 kontekstas + M0 mašina). */
 
 SETS
     BOOKS; READERS
 
 ABSTRACT_CONSTANTS
-    max_loans   /* per-reader loan cap */
+    max_loans   /* skolinimosi riba vienam skaitytojui */
 
 PROPERTIES
     max_loans : NATURAL1 &
-    max_loans = 2   /* concrete value for ProB enumeration */
+    max_loans = 2   /* konkreti reikšmė ProB enumeracijai */
 
 VARIABLES
-    copies,     /* total copies per book (0 = not stocked) */
-    loans,      /* who currently has what */
-    waitlist    /* per-book set of waiting readers */
+    copies,     /* bendras egzempliorių skaičius kiekvienai knygai (0 = nėra) */
+    loans,      /* kas šiuo metu turi kurią knygą */
+    waitlist    /* laukiančių skaitytojų aibė kiekvienai knygai */
 
 INVARIANT
     copies   : BOOKS --> NATURAL &
     loans    : READERS <-> BOOKS &
     waitlist : BOOKS <-> READERS &
-    /* waitlists only exist for multi-copy books */
+    /* laukimo sąrašai egzistuoja tik knygoms su keliais egzemplioriais */
     !(b,r).(b|->r : waitlist => copies(b) >= 2) &
-    /* no reader exceeds the loan cap */
+    /* nė vienas skaitytojas neviršija skolinimosi ribos */
     !r.(r : READERS => card(loans[{r}]) <= max_loans) &
-    /* last copy of any book always stays in the library */
+    /* paskutinis bet kurios knygos egzempliorius visada lieka bibliotekoje */
     !b.(b : BOOKS & loans~[{b}] /= {} => card(loans~[{b}]) < copies(b))
 
 INITIALISATION
-    /* empty library: no copies, no loans, no waitlists */
+    /* tuščia biblioteka: nėra egzempliorių, paskolų ir laukimo sąrašų */
     copies   := BOOKS * {0} ||
     loans    := {} ||
     waitlist := {}
 
 OPERATIONS
 
-    /* add k copies of book b — guard: k >= 1 (bounded for model-check enumeration) */
+    /* pridėti k egzempliorių knygos b — sąlyga: k >= 1 (apribota dėl modelio tikrinimo) */
     add_copies(b, k) =
         PRE
             b : BOOKS &
@@ -46,10 +46,11 @@ OPERATIONS
             copies(b) := copies(b) + k
         END;
 
-    /* loan book b to reader r — guard:
-     *   book has >=2 copies, reader doesn't already hold it,
-     *   reader below loan cap, at least one copy stays in library,
-     *   and if a waitlist exists the reader must be on it */
+    /* paskolinti knygą b skaitytojui r — sąlyga:
+     *   knyga turi >=2 egzempliorius, skaitytojas jos dar neturi,
+     *   skaitytojas neviršija skolinimosi ribos, bent vienas egzempliorius
+     *   lieka bibliotekoje, o jei laukimo sąrašas netuščias — skaitytojas
+     *   privalo jame būti */
     loan_book(r, b) =
         PRE
             r : READERS &
@@ -64,7 +65,7 @@ OPERATIONS
             waitlist := waitlist - {b|->r}
         END;
 
-    /* return book b held by reader r */
+    /* grąžinti knygą b, kurią turi skaitytojas r */
     return_book(r, b) =
         PRE
             r|->b : loans
@@ -72,9 +73,9 @@ OPERATIONS
             loans := loans - {r|->b}
         END;
 
-    /* put reader r on waitlist for unavailable book b — guard:
-     *   book has >=2 copies, currently fully out (only last copy left),
-     *   reader not already waiting */
+    /* įrašyti skaitytoją r į knygos b laukimo sąrašą — sąlyga:
+     *   knyga turi >=2 egzempliorius, šiuo metu nepasiekiama (likęs tik
+     *   paskutinis egzempliorius), skaitytojas dar nelaukia */
     add_to_waitlist(r, b) =
         PRE
             r : READERS &
