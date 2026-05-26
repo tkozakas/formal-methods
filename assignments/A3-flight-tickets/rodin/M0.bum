@@ -1,16 +1,55 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <org.eventb.core.machineFile org.eventb.core.configuration="org.eventb.core.fwd" version="5">
-    <org.eventb.core.seesContext name="'" org.eventb.core.target="C0"/>
-    <org.eventb.core.variable name="(" org.eventb.core.identifier="available"/>
-    <org.eventb.core.invariant name=")" org.eventb.core.label="inv1" org.eventb.core.predicate="available ∈ schedule → ℕ"/>
-    <org.eventb.core.invariant name="*" org.eventb.core.label="inv2" org.eventb.core.predicate="∀f,d · f ↦ d ∈ schedule ⇒ available(f ↦ d) ≤ seats(f)"/>
-    <org.eventb.core.event name="+" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION">
-        <org.eventb.core.action name="'" org.eventb.core.assignment="available ≔ schedule × {0}" org.eventb.core.label="act1"/>
+    <org.eventb.core.seesContext name="s0" org.eventb.core.target="C0"/>
+    <org.eventb.core.variable name="v0" org.eventb.core.identifier="available" org.eventb.core.comment="Free seats per (flight,date) (req 7)"/>
+    <org.eventb.core.invariant name="i0" org.eventb.core.label="inv1" org.eventb.core.predicate="available ∈ schedule → ℕ" org.eventb.core.comment="available is a total function on scheduled pairs"/>
+    <org.eventb.core.invariant name="i1" org.eventb.core.label="inv2" org.eventb.core.predicate="∀f,d · f ↦ d ∈ schedule ⇒ available(f ↦ d) ≤ seats(f)" org.eventb.core.comment="Free seats never exceed plane capacity"/>
+    <org.eventb.core.event name="e0" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION" org.eventb.core.comment="Start with all planes empty (every scheduled flight has all seats free)">
+        <org.eventb.core.action name="e0a0" org.eventb.core.assignment="available ≔ {f,d · f ↦ d ∈ schedule ∣ (f ↦ d) ↦ seats(f)}" org.eventb.core.label="act1" org.eventb.core.comment="available(f,d) = seats(f) for every scheduled (f,d)"/>
     </org.eventb.core.event>
-    <org.eventb.core.event name="," org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="update_availability">
-        <org.eventb.core.parameter name="'" org.eventb.core.identifier="updates"/>
-        <org.eventb.core.guard name="*" org.eventb.core.label="grd1" org.eventb.core.predicate="updates ∈ schedule ⇸ ℕ"/>
-        <org.eventb.core.guard name="+" org.eventb.core.label="grd2" org.eventb.core.predicate="∀f,d · f ↦ d ∈ dom(updates) ⇒ updates(f ↦ d) ≤ seats(f)"/>
-        <org.eventb.core.action name="," org.eventb.core.assignment="available ≔ available  updates" org.eventb.core.label="act1"/>
+    <org.eventb.core.event name="e1" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="book" org.eventb.core.comment="Book n tickets on flight f for date d (req 8)">
+        <org.eventb.core.parameter name="e1p0" org.eventb.core.identifier="f"/>
+        <org.eventb.core.parameter name="e1p1" org.eventb.core.identifier="d"/>
+        <org.eventb.core.parameter name="e1p2" org.eventb.core.identifier="n"/>
+        <org.eventb.core.guard name="e1g0" org.eventb.core.label="grd1" org.eventb.core.predicate="f ↦ d ∈ schedule" org.eventb.core.comment="Flight must run on that date"/>
+        <org.eventb.core.guard name="e1g1" org.eventb.core.label="grd2" org.eventb.core.predicate="n ∈ ℕ1" org.eventb.core.comment="At least 1 ticket"/>
+        <org.eventb.core.guard name="e1g2" org.eventb.core.label="grd3" org.eventb.core.predicate="n ≤ available(f ↦ d)" org.eventb.core.comment="Enough free seats"/>
+        <org.eventb.core.action name="e1a0" org.eventb.core.assignment="available(f ↦ d) ≔ available(f ↦ d) − n" org.eventb.core.label="act1" org.eventb.core.comment="Decrease free seats by n"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="e2" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="cancel" org.eventb.core.comment="Cancel n previously booked tickets (req 9)">
+        <org.eventb.core.parameter name="e2p0" org.eventb.core.identifier="f"/>
+        <org.eventb.core.parameter name="e2p1" org.eventb.core.identifier="d"/>
+        <org.eventb.core.parameter name="e2p2" org.eventb.core.identifier="n"/>
+        <org.eventb.core.guard name="e2g0" org.eventb.core.label="grd1" org.eventb.core.predicate="f ↦ d ∈ schedule" org.eventb.core.comment="Flight must run on that date"/>
+        <org.eventb.core.guard name="e2g1" org.eventb.core.label="grd2" org.eventb.core.predicate="n ∈ ℕ1" org.eventb.core.comment="At least 1 ticket"/>
+        <org.eventb.core.guard name="e2g2" org.eventb.core.label="grd3" org.eventb.core.predicate="available(f ↦ d) + n ≤ seats(f)" org.eventb.core.comment="Cannot exceed plane capacity"/>
+        <org.eventb.core.action name="e2a0" org.eventb.core.assignment="available(f ↦ d) ≔ available(f ↦ d) + n" org.eventb.core.label="act1" org.eventb.core.comment="Increase free seats by n"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="e3" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="book_connecting" org.eventb.core.comment="Book n tickets on two connecting flights via shared intermediate city (req 11,12)">
+        <org.eventb.core.parameter name="e3p0" org.eventb.core.identifier="from"/>
+        <org.eventb.core.parameter name="e3p1" org.eventb.core.identifier="to"/>
+        <org.eventb.core.parameter name="e3p2" org.eventb.core.identifier="d"/>
+        <org.eventb.core.parameter name="e3p3" org.eventb.core.identifier="n"/>
+        <org.eventb.core.parameter name="e3p4" org.eventb.core.identifier="max_total"/>
+        <org.eventb.core.parameter name="e3p5" org.eventb.core.identifier="f1"/>
+        <org.eventb.core.parameter name="e3p6" org.eventb.core.identifier="f2"/>
+        <org.eventb.core.guard name="e3g0" org.eventb.core.label="grd1" org.eventb.core.predicate="from ∈ CITIES" org.eventb.core.comment="Departure city"/>
+        <org.eventb.core.guard name="e3g1" org.eventb.core.label="grd2" org.eventb.core.predicate="to ∈ CITIES" org.eventb.core.comment="Final destination city"/>
+        <org.eventb.core.guard name="e3g2" org.eventb.core.label="grd3" org.eventb.core.predicate="from ≠ to" org.eventb.core.comment="Endpoints differ"/>
+        <org.eventb.core.guard name="e3g3" org.eventb.core.label="grd4" org.eventb.core.predicate="d ∈ DATES" org.eventb.core.comment="Travel date"/>
+        <org.eventb.core.guard name="e3g4" org.eventb.core.label="grd5" org.eventb.core.predicate="n ∈ ℕ1" org.eventb.core.comment="At least 1 ticket"/>
+        <org.eventb.core.guard name="e3g5" org.eventb.core.label="grd6" org.eventb.core.predicate="max_total ∈ ℕ" org.eventb.core.comment="Budget upper bound"/>
+        <org.eventb.core.guard name="e3g6" org.eventb.core.label="grd7" org.eventb.core.predicate="f1 ∈ FLIGHTS" org.eventb.core.comment="First leg flight (non-det chosen, req 12)"/>
+        <org.eventb.core.guard name="e3g7" org.eventb.core.label="grd8" org.eventb.core.predicate="f2 ∈ FLIGHTS" org.eventb.core.comment="Second leg flight (non-det chosen, req 12)"/>
+        <org.eventb.core.guard name="e3g8" org.eventb.core.label="grd9" org.eventb.core.predicate="f1 ≠ f2" org.eventb.core.comment="Two distinct flights"/>
+        <org.eventb.core.guard name="e3g9" org.eventb.core.label="grd10" org.eventb.core.predicate="f1 ↦ d ∈ schedule" org.eventb.core.comment="Leg 1 runs on that date"/>
+        <org.eventb.core.guard name="e3g10" org.eventb.core.label="grd11" org.eventb.core.predicate="f2 ↦ d ∈ schedule" org.eventb.core.comment="Leg 2 runs on that date"/>
+        <org.eventb.core.guard name="e3g11" org.eventb.core.label="grd12" org.eventb.core.predicate="dep(f1) = from" org.eventb.core.comment="Leg 1 starts at from"/>
+        <org.eventb.core.guard name="e3g12" org.eventb.core.label="grd13" org.eventb.core.predicate="dest(f1) = dep(f2)" org.eventb.core.comment="Legs share intermediate city"/>
+        <org.eventb.core.guard name="e3g13" org.eventb.core.label="grd14" org.eventb.core.predicate="dest(f2) = to" org.eventb.core.comment="Leg 2 ends at to"/>
+        <org.eventb.core.guard name="e3g14" org.eventb.core.label="grd15" org.eventb.core.predicate="available(f1 ↦ d) ≥ n" org.eventb.core.comment="Enough seats on leg 1"/>
+        <org.eventb.core.guard name="e3g15" org.eventb.core.label="grd16" org.eventb.core.predicate="available(f2 ↦ d) ≥ n" org.eventb.core.comment="Enough seats on leg 2"/>
+        <org.eventb.core.guard name="e3g16" org.eventb.core.label="grd17" org.eventb.core.predicate="price(f1 ↦ d) + price(f2 ↦ d) ≤ max_total" org.eventb.core.comment="Total price within budget"/>
+        <org.eventb.core.action name="e3a0" org.eventb.core.assignment="available ≔ available  {(f1 ↦ d) ↦ (available(f1 ↦ d) − n), (f2 ↦ d) ↦ (available(f2 ↦ d) − n)}" org.eventb.core.label="act1" org.eventb.core.comment="Override available on both legs simultaneously"/>
     </org.eventb.core.event>
 </org.eventb.core.machineFile>

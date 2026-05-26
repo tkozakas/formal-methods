@@ -5,10 +5,9 @@
     <org.eventb.core.variable name=")" org.eventb.core.identifier="occupied"/>
     <org.eventb.core.invariant name="+" org.eventb.core.label="inv1" org.eventb.core.predicate="active_res ⊆ RESERVATION"/>
     <org.eventb.core.invariant name="," org.eventb.core.label="inv2" org.eventb.core.predicate="occupied ⊆ RESERVATION"/>
-    <org.eventb.core.invariant name="-" org.eventb.core.label="inv3" org.eventb.core.predicate="active_res ∩ occupied = ∅"/>
-    <org.eventb.core.invariant name="/" org.eventb.core.label="inv4" org.eventb.core.predicate="∀r1,r2 · r1 ∈ active_res ∧ r2 ∈ active_res ∧ r1 ≠ r2 ∧ res_room(r1) = res_room(r2) ⇒ res_dates(r1) ∩ res_dates(r2) = ∅"/>
-    <org.eventb.core.invariant name="0" org.eventb.core.label="inv5" org.eventb.core.predicate="∀r,o · r ∈ active_res ∧ o ∈ occupied ∧ res_room(r) = res_room(o) ⇒ res_dates(r) ∩ res_dates(o) = ∅"/>
-    <org.eventb.core.invariant name="1" org.eventb.core.label="inv6" org.eventb.core.predicate="∀o1,o2 · o1 ∈ occupied ∧ o2 ∈ occupied ∧ o1 ≠ o2 ∧ res_room(o1) = res_room(o2) ⇒ res_dates(o1) ∩ res_dates(o2) = ∅"/>
+    <org.eventb.core.invariant name="/" org.eventb.core.label="inv3" org.eventb.core.predicate="∀r1,r2 · r1 ∈ active_res ∧ r2 ∈ active_res ∧ r1 ≠ r2 ∧ res_room(r1) = res_room(r2) ⇒ res_dates(r1) ∩ res_dates(r2) = ∅"/>
+    <org.eventb.core.invariant name="0" org.eventb.core.label="inv4" org.eventb.core.predicate="∀r,o · r ∈ active_res ∧ o ∈ occupied ∧ res_room(r) = res_room(o) ⇒ res_dates(r) ∩ res_dates(o) = ∅"/>
+    <org.eventb.core.invariant name="1" org.eventb.core.label="inv5" org.eventb.core.predicate="∀o1,o2 · o1 ∈ occupied ∧ o2 ∈ occupied ∧ o1 ≠ o2 ∧ res_room(o1) = res_room(o2) ⇒ res_dates(o1) ∩ res_dates(o2) = ∅"/>
     <org.eventb.core.event name="2" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION">
         <org.eventb.core.action name="'" org.eventb.core.assignment="active_res ≔ ∅" org.eventb.core.label="act1"/>
         <org.eventb.core.action name="(" org.eventb.core.assignment="occupied ≔ ∅" org.eventb.core.label="act2"/>

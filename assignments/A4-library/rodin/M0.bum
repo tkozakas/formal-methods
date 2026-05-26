@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<org.eventb.core.machineFile org.eventb.core.configuration="org.eventb.core.fwd" version="5">
+    <org.eventb.core.seesContext name="s0" org.eventb.core.target="C0"/>
+    <org.eventb.core.variable name="v0" org.eventb.core.identifier="copies" org.eventb.core.comment="Total copies in library per book (req 3,4)"/>
+    <org.eventb.core.variable name="v1" org.eventb.core.identifier="loans" org.eventb.core.comment="Which reader holds which book (req 2,4)"/>
+    <org.eventb.core.variable name="v2" org.eventb.core.identifier="waitlist" org.eventb.core.comment="Readers waiting for unavailable multi-copy books (req 8)"/>
+    <org.eventb.core.invariant name="i0" org.eventb.core.label="inv1" org.eventb.core.predicate="copies ∈ BOOKS → ℕ" org.eventb.core.comment="copies typing"/>
+    <org.eventb.core.invariant name="i1" org.eventb.core.label="inv2" org.eventb.core.predicate="loans ∈ READERS ↔ BOOKS" org.eventb.core.comment="loans typing (no duplicate r,b pair = req 7)"/>
+    <org.eventb.core.invariant name="i2" org.eventb.core.label="inv3" org.eventb.core.predicate="waitlist ∈ BOOKS ↔ READERS" org.eventb.core.comment="waitlist typing"/>
+    <org.eventb.core.invariant name="i3" org.eventb.core.label="inv4" org.eventb.core.predicate="∀b,r · b ↦ r ∈ waitlist ⇒ copies(b) ≥ 2" org.eventb.core.comment="Waitlist exists only for books with ≥2 copies (req 8)"/>
+    <org.eventb.core.invariant name="i4" org.eventb.core.label="inv5" org.eventb.core.predicate="∀r · r ∈ READERS ⇒ card(loans[{r}]) ≤ max_loans" org.eventb.core.comment="No reader holds more than max_loans books (req 5)"/>
+    <org.eventb.core.invariant name="i5" org.eventb.core.label="inv6" org.eventb.core.predicate="∀b · b ∈ BOOKS ∧ loans∼[{b}] ≠ ∅ ⇒ card(loans∼[{b}]) &lt; copies(b)" org.eventb.core.comment="At least one copy always stays in library (req 6)"/>
+    <org.eventb.core.invariant name="i6" org.eventb.core.label="inv7" org.eventb.core.predicate="∀b · b ∈ BOOKS ⇒ card(waitlist[{b}]) ≤ card(READERS)" org.eventb.core.comment="Waitlist bounded by number of readers"/>
+    <org.eventb.core.invariant name="i7" org.eventb.core.label="inv8" org.eventb.core.predicate="finite(loans)" org.eventb.core.comment="loans is finite (helps cardinality proofs)"/>
+    <org.eventb.core.invariant name="i8" org.eventb.core.label="inv9" org.eventb.core.predicate="finite(waitlist)" org.eventb.core.comment="waitlist is finite (helps cardinality proofs)"/>
+    <org.eventb.core.event name="e0" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="INITIALISATION" org.eventb.core.comment="Empty library: no books, no loans, no waitlists">
+        <org.eventb.core.action name="e0a0" org.eventb.core.assignment="copies ≔ BOOKS × {0}" org.eventb.core.label="act1" org.eventb.core.comment="No copies of any book yet"/>
+        <org.eventb.core.action name="e0a1" org.eventb.core.assignment="loans ≔ ∅" org.eventb.core.label="act2" org.eventb.core.comment="No loans"/>
+        <org.eventb.core.action name="e0a2" org.eventb.core.assignment="waitlist ≔ ∅" org.eventb.core.label="act3" org.eventb.core.comment="No waitlists"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="e1" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="add_copies" org.eventb.core.comment="Add k copies of book b (new or existing) (req 9)">
+        <org.eventb.core.parameter name="e1p0" org.eventb.core.identifier="b"/>
+        <org.eventb.core.parameter name="e1p1" org.eventb.core.identifier="k"/>
+        <org.eventb.core.guard name="e1g0" org.eventb.core.label="grd1" org.eventb.core.predicate="b ∈ BOOKS" org.eventb.core.comment="Book identifier"/>
+        <org.eventb.core.guard name="e1g1" org.eventb.core.label="grd2" org.eventb.core.predicate="k ∈ ℕ1" org.eventb.core.comment="At least 1 copy added"/>
+        <org.eventb.core.action name="e1a0" org.eventb.core.assignment="copies(b) ≔ copies(b) + k" org.eventb.core.label="act1" org.eventb.core.comment="Increase copy count"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="e2" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="loan_book" org.eventb.core.comment="Loan book b to reader r (req 2,9)">
+        <org.eventb.core.parameter name="e2p0" org.eventb.core.identifier="r"/>
+        <org.eventb.core.parameter name="e2p1" org.eventb.core.identifier="b"/>
+        <org.eventb.core.guard name="e2g0" org.eventb.core.label="grd1" org.eventb.core.predicate="r ∈ READERS" org.eventb.core.comment="Reader identifier"/>
+        <org.eventb.core.guard name="e2g1" org.eventb.core.label="grd2" org.eventb.core.predicate="b ∈ BOOKS" org.eventb.core.comment="Book identifier"/>
+        <org.eventb.core.guard name="e2g2" org.eventb.core.label="grd3" org.eventb.core.predicate="copies(b) ≥ 2" org.eventb.core.comment="Book has ≥2 copies (last must stay, req 6)"/>
+        <org.eventb.core.guard name="e2g3" org.eventb.core.label="grd4" org.eventb.core.predicate="r ↦ b ∉ loans" org.eventb.core.comment="Reader does not already hold this book (req 7)"/>
+        <org.eventb.core.guard name="e2g4" org.eventb.core.label="grd5" org.eventb.core.predicate="card(loans[{r}]) &lt; max_loans" org.eventb.core.comment="Reader below loan cap (req 5)"/>
+        <org.eventb.core.guard name="e2g5" org.eventb.core.label="grd6" org.eventb.core.predicate="card(loans∼[{b}]) &lt; copies(b) − 1" org.eventb.core.comment="At least one copy stays in library (req 6)"/>
+        <org.eventb.core.guard name="e2g6" org.eventb.core.label="grd7" org.eventb.core.predicate="waitlist[{b}] = ∅ ∨ r ∈ waitlist[{b}]" org.eventb.core.comment="If waitlist non-empty, reader must be on it (req 10)"/>
+        <org.eventb.core.action name="e2a0" org.eventb.core.assignment="loans ≔ loans ∪ {r ↦ b}" org.eventb.core.label="act1" org.eventb.core.comment="Record loan"/>
+        <org.eventb.core.action name="e2a1" org.eventb.core.assignment="waitlist ≔ waitlist ∖ {b ↦ r}" org.eventb.core.label="act2" org.eventb.core.comment="Remove reader from waitlist if present"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="e3" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="return_book" org.eventb.core.comment="Reader r returns book b (req 9)">
+        <org.eventb.core.parameter name="e3p0" org.eventb.core.identifier="r"/>
+        <org.eventb.core.parameter name="e3p1" org.eventb.core.identifier="b"/>
+        <org.eventb.core.guard name="e3g0" org.eventb.core.label="grd1" org.eventb.core.predicate="r ↦ b ∈ loans" org.eventb.core.comment="Reader actually holds this book"/>
+        <org.eventb.core.action name="e3a0" org.eventb.core.assignment="loans ≔ loans ∖ {r ↦ b}" org.eventb.core.label="act1" org.eventb.core.comment="Remove loan record"/>
+    </org.eventb.core.event>
+    <org.eventb.core.event name="e4" org.eventb.core.convergence="0" org.eventb.core.extended="false" org.eventb.core.label="add_to_waitlist" org.eventb.core.comment="Put reader r on waitlist for unavailable book b (req 8,9)">
+        <org.eventb.core.parameter name="e4p0" org.eventb.core.identifier="r"/>
+        <org.eventb.core.parameter name="e4p1" org.eventb.core.identifier="b"/>
+        <org.eventb.core.guard name="e4g0" org.eventb.core.label="grd1" org.eventb.core.predicate="r ∈ READERS" org.eventb.core.comment="Reader identifier"/>
+        <org.eventb.core.guard name="e4g1" org.eventb.core.label="grd2" org.eventb.core.predicate="b ∈ BOOKS" org.eventb.core.comment="Book identifier"/>
+        <org.eventb.core.guard name="e4g2" org.eventb.core.label="grd3" org.eventb.core.predicate="copies(b) ≥ 2" org.eventb.core.comment="Only multi-copy books have waitlists (req 8)"/>
+        <org.eventb.core.guard name="e4g3" org.eventb.core.label="grd4" org.eventb.core.predicate="card(loans∼[{b}]) = copies(b) − 1" org.eventb.core.comment="Book currently unavailable"/>
+        <org.eventb.core.guard name="e4g4" org.eventb.core.label="grd5" org.eventb.core.predicate="b ↦ r ∉ waitlist" org.eventb.core.comment="Reader not already waiting for this book"/>
+        <org.eventb.core.action name="e4a0" org.eventb.core.assignment="waitlist ≔ waitlist ∪ {b ↦ r}" org.eventb.core.label="act1" org.eventb.core.comment="Append reader to waitlist"/>
+    </org.eventb.core.event>
+</org.eventb.core.machineFile>

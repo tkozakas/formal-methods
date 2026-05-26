@@ -1,56 +1,37 @@
 MACHINE FlightTickets
-/* ============================================================================
- * Flight Ticket System — classical B encoding for ProB verification
- *
- * Mirrors the Event-B refinement chain:
- *   C0 + M0  : static schedule + abstract `available` variable
- *   M1       : concrete book / cancel events refining update_availability
- *   C1 + M2  : prices + book_connecting (two legs through intermediate city)
- *
- * All machines collapsed into one classical B file because ProB CLI parses
- * .mch directly (Rodin XML is not parsed by probcli without export).
- * Requirements satisfied (1–12) — see requirements.md.
- * ============================================================================ */
+/* Flight Ticket System — flat B machine for ProB verification.
+ * Mirrors the Event-B project (C0 static data + M0 dynamic state). */
+
 SETS
-    CITIES;
-    FLIGHTS;
-    DATES
+    CITIES; FLIGHTS; DATES
+
 ABSTRACT_CONSTANTS
-    dep,           /* req 2 */
-    dest,          /* req 2 */
-    seats,         /* req 6 */
-    schedule,      /* req 4, 5 */
-    price          /* req 10 */
+    dep, dest, seats, schedule, price   /* constants */
+
 PROPERTIES
     dep      : FLIGHTS --> CITIES &
     dest     : FLIGHTS --> CITIES &
-    !f.(f : FLIGHTS => dep(f) /= dest(f)) &        /* req 3 */
-    seats    : FLIGHTS --> NATURAL1 &              /* req 6 */
-    schedule : FLIGHTS <-> DATES &                  /* req 4 */
-    price    : schedule --> NATURAL                 /* req 10 */
+    /* a flight cannot start and end in the same city */
+    !f.(f : FLIGHTS => dep(f) /= dest(f)) &
+    seats    : FLIGHTS --> NATURAL1 &
+    schedule : FLIGHTS <-> DATES &
+    price    : schedule --> NATURAL
+
 VARIABLES
-    available                                       /* req 7 */
+    available
+
 INVARIANT
     available : schedule --> NATURAL &
+    /* free seats never exceed plane capacity */
     !(f,d).(f|->d : schedule => available(f|->d) <= seats(f))
+
 INITIALISATION
-    available := schedule * {0}
+    /* every scheduled flight starts fully empty (all seats free) */
+    available := %(f,d).(f|->d : schedule | seats(f))
+
 OPERATIONS
 
-    /* ------------------------------------------------------------------------
-     * Abstract event from M0 — kept here so ProB can model-check the abstract
-     * non-deterministic update of inventory. Concrete book/cancel operations
-     * (refinements) restrict its non-determinism in M1.
-     * ------------------------------------------------------------------------ */
-    update_availability(f, d, newval) =
-        PRE
-            f|->d : schedule &
-            newval : 0 .. seats(f)
-        THEN
-            available(f|->d) := newval
-        END;
-
-    /* req 8: book n tickets for flight f on date d (refines update_availability) */
+    /* book n seats — guard: flight is scheduled, n >= 1, enough free seats */
     book(f, d, n) =
         PRE
             f|->d : schedule &
@@ -60,7 +41,7 @@ OPERATIONS
             available(f|->d) := available(f|->d) - n
         END;
 
-    /* req 9: cancel n tickets (refines update_availability) */
+    /* cancel n seats — guard: flight scheduled, n >= 1, doesn't exceed capacity */
     cancel(f, d, n) =
         PRE
             f|->d : schedule &
@@ -70,9 +51,10 @@ OPERATIONS
             available(f|->d) := available(f|->d) + n
         END;
 
-    /* req 11, 12: book two connecting flights c1 -> c2 -> c3 on date d
-     * with combined price <= max_total. Intermediate city c2 and concrete
-     * flights f1, f2 are chosen non-deterministically via ANY. */
+    /* book a connection c1 -> c2 -> c3 on date d within budget max_total.
+     * guard: pick layover c2 and two distinct flights f1, f2 such that
+     *   legs match the cities, both are scheduled on d,
+     *   each has a free seat, and total price fits the budget */
     book_connecting(c1, c3, d, max_total) =
         PRE
             c1 : CITIES & c3 : CITIES &
@@ -90,6 +72,7 @@ OPERATIONS
                 available(f2|->d) >= 1 &
                 price(f1|->d) + price(f2|->d) <= max_total
             THEN
+                /* <+ is function override: update only these two entries */
                 available := available <+ {
                     f1|->d |-> available(f1|->d) - 1,
                     f2|->d |-> available(f2|->d) - 1

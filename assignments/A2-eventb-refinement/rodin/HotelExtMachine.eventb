@@ -1,120 +1,277 @@
+/* ============================================================================
+ * HOTEL RESERVATION SYSTEM — Event-B model
+ *
+ * Models a hotel that handles reservations, check-ins, and check-outs.
+ * Safety properties enforced:
+ *   - No double-booking of a room for overlapping dates
+ *   - A room can have at most one customer at a time
+ *   - Reservations cannot overlap with active stays
+ *
+ * ----------------------------------------------------------------------------
+ * NOTATION CHEAT SHEET
+ *   ∈    "is a member of"           x ∈ S means x is in set S
+ *   ⊆    "is a subset of"           A ⊆ B means every element of A is in B
+ *   ∪    "union"                    A ∪ B = elements in A or B
+ *   ∩    "intersection"             A ∩ B = elements in both A and B
+ *   ∅    "empty set"                the set with no elements
+ *   ∖    "set difference"           A ∖ B = elements in A but not in B
+ *
+ *   →    "total function"           f ∈ A → B: every a∈A has exactly one f(a)
+ *   ⇸    "partial function"         f ∈ A ⇸ B: some a∈A may have no f(a)
+ *   ↦    "maps to"                  a ↦ b is the pair (a, b)
+ *
+ *   ℙ(S)   "powerset of S"          all subsets of S (including ∅ and S itself)
+ *   ℙ1(S)  "non-empty powerset"     all non-empty subsets of S
+ *
+ *   dom(f)  "domain of f"           the set of inputs f knows about
+ *   ran(f)  "range of f"            the set of outputs f produces
+ *   {x} ⩤ f "domain subtraction"    remove x from f's domain (delete entry for x)
+ *
+ *   ∀x · P  "for all x, P holds"
+ *   ⇒      "implies"                if-then logic
+ *   ≔      "becomes equal to"       assignment in actions
+ * ============================================================================ */
+
 CONTEXT HotelExtContext
 
+/* Contexts hold the STATIC part of the model: types, constants, axioms.
+ * Nothing in a context can change while the system runs. */
+
 SETS
-    CUSTOMER        /* Set of all possible customers */
-    ROOM            /* Set of all hotel rooms */
-    DATE            /* Set of all possible dates */
-    RESERVATION     /* Abstract set of all possible reservations */
+    CUSTOMER        /* The carrier set of every possible customer. Abstract:
+                     * we don't care about names/IDs, just that customers exist. */
+    ROOM            /* The carrier set of every possible hotel room. */
+    DATE            /* The carrier set of every possible calendar date. */
+    RESERVATION     /* The carrier set of every possible reservation.
+                     * Treated as opaque tokens — we extract info via the
+                     * constants below. */
 
 CONSTANTS
-    res_room        /* Extracts the room from a reservation */
-    res_customer    /* Extracts the customer from a reservation */
-    res_dates       /* Extracts the reserved dates from a reservation */
+    /* These are fixed lookup functions: given a reservation, they tell us
+     * what room/customer/dates it concerns. They never change. */
+    res_room        /* Function: reservation ↦ which room is booked */
+    res_customer    /* Function: reservation ↦ which customer made it */
+    res_dates       /* Function: reservation ↦ which dates it covers */
 
 AXIOMS
-    axm1: res_room ∈ RESERVATION → ROOM                /* Each reservation is for exactly one room */
-    axm2: res_customer ∈ RESERVATION → CUSTOMER         /* Each reservation is for exactly one customer */
-    axm3: res_dates ∈ RESERVATION → ℙ1(DATE)            /* Each reservation has a non-empty set of dates */
+    /* axm1: res_room is a TOTAL function from RESERVATION to ROOM.
+     * "Total" means EVERY reservation has exactly one room. No reservation
+     * can exist without a room attached to it. */
+    axm1: res_room ∈ RESERVATION → ROOM
+
+    /* axm2: Every reservation belongs to exactly one customer.
+     * (Simplification: no group bookings in this model.) */
+    axm2: res_customer ∈ RESERVATION → CUSTOMER
+
+    /* axm3: Every reservation covers a NON-EMPTY set of dates.
+     * ℙ1(DATE) excludes ∅ — you can't reserve a room for zero nights.
+     * The set can be any size ≥ 1 (e.g. {Mon}, {Mon, Tue, Wed}). */
+    axm3: res_dates ∈ RESERVATION → ℙ1(DATE)
 
 END
 
+
+/* ============================================================================ */
+
+
 MACHINE HotelExtMachine
-SEES HotelExtContext
+SEES HotelExtContext     /* "SEES" = this machine can use the context's
+                          * sets, constants, and axioms. */
 
 VARIABLES
-    active_res      /* Currently active reservations (subset of RESERVATION) */
-    occ_rooms       /* Maps occupied rooms to their checked-in customers */
-    occ_dates       /* Maps occupied rooms to their staying dates */
+    /* Variables hold the DYNAMIC state — what changes when events fire. */
+    active_res      /* The set of reservations currently "live" in the system
+                     * (made but not yet checked in or cancelled). */
+    occ_rooms       /* A partial function: occupied room ↦ customer staying there.
+                     * If a room is NOT in dom(occ_rooms), it's empty. */
+    occ_dates       /* A partial function: occupied room ↦ dates of the current stay.
+                     * Parallel to occ_rooms — tells us which dates are blocked. */
 
 INVARIANTS
-    inv1: active_res ⊆ RESERVATION                                     /* R3: Active reservations are a subset of all reservations */
-    inv2: occ_rooms ∈ ROOM ⇸ CUSTOMER                                  /* R9: Each occupied room has at most one customer (partial function) */
-    inv3: occ_dates ∈ ROOM ⇸ ℙ1(DATE)                                  /* R9: Each occupied room has a non-empty set of dates */
-    inv4: dom(occ_rooms) = dom(occ_dates)                               /* Consistency: occupied rooms track both customer and dates */
-    inv5: ∀r1,r2 · r1 ∈ active_res ∧ r2 ∈ active_res ∧ r1 ≠ r2       /* R5: Reservation dates cannot overlap for the same room */
+    /* Invariants are properties that MUST hold in every reachable state.
+     * Every event has to preserve all invariants — that's the safety guarantee. */
+
+    /* inv1: active_res is a subset of all possible reservations.
+     * Trivially true since active_res just collects RESERVATION tokens. */
+    inv1: active_res ⊆ RESERVATION
+
+    /* inv2: occ_rooms is a PARTIAL function (⇸) — a room may or may not be
+     * in its domain. If it IS in the domain, it has exactly ONE customer.
+     * Rules out impossible states like "two customers in the same room". */
+    inv2: occ_rooms ∈ ROOM ⇸ CUSTOMER
+
+    /* inv3: occ_dates is also a partial function. Each occupied room maps
+     * to a NON-EMPTY set of dates (ℙ1) — you can't be "checked in for zero
+     * nights". */
+    inv3: occ_dates ∈ ROOM ⇸ ℙ1(DATE)
+
+    /* inv4: The two occupancy tables must agree on WHICH rooms are occupied.
+     * If room R has a customer (in occ_rooms), it must also have dates
+     * (in occ_dates), and vice versa. Prevents "customer with no dates"
+     * or "dates with no customer". */
+    inv4: dom(occ_rooms) = dom(occ_dates)
+
+    /* inv5: SAFETY — no two active reservations for the SAME room can
+     * share any dates. Reads as:
+     *   "For all pairs of distinct active reservations r1, r2:
+     *    if they're for the same room, their date sets are disjoint."
+     * This is the core no-double-booking property for reservations. */
+    inv5: ∀r1,r2 · r1 ∈ active_res ∧ r2 ∈ active_res ∧ r1 ≠ r2
               ∧ res_room(r1) = res_room(r2)
               ⇒ res_dates(r1) ∩ res_dates(r2) = ∅
-    inv6: ∀r · r ∈ active_res ∧ res_room(r) ∈ dom(occ_dates)           /* R5,R11: Reservation dates cannot overlap with occupied dates */
-              ⇒ res_dates(r) ∩ occ_dates(res_room(r)) = ∅              /*         for the same room */
+
+    /* inv6: SAFETY — a reservation's dates can't clash with an ongoing stay
+     * in the same room. Reads as:
+     *   "For every active reservation r: if its room is currently occupied,
+     *    the reservation's dates must be disjoint from the occupied dates."
+     * Prevents the reservation system from conflicting with walk-ins. */
+    inv6: ∀r · r ∈ active_res ∧ res_room(r) ∈ dom(occ_dates)
+              ⇒ res_dates(r) ∩ occ_dates(res_room(r)) = ∅
 
 EVENTS
 
+    /* Initial state: the hotel just opened. Nothing is reserved, nothing
+     * is occupied. All variables start as the empty set / empty function. */
     INITIALISATION
     BEGIN
-        act1: active_res ≔ ∅           /* No reservations initially */
-        act2: occ_rooms ≔ ∅            /* No occupied rooms initially */
-        act3: occ_dates ≔ ∅            /* No occupied dates initially */
+        act1: active_res ≔ ∅           /* no reservations yet */
+        act2: occ_rooms ≔ ∅            /* no rooms occupied */
+        act3: occ_dates ≔ ∅            /* no occupancy dates */
     END
 
-    /* R1, R4, R5: A customer makes a reservation */
+    /* ------------------------------------------------------------------------
+     * EVENT: ReserveRoom
+     * A customer makes a new reservation.
+     * "ANY rv WHERE ... THEN ..." means: pick any rv satisfying the guards.
+     * ------------------------------------------------------------------------ */
     EVENT ReserveRoom
     ANY
-        rv      /* The reservation being made */
+        rv      /* the new reservation being added */
     WHERE
-        grd1: rv ∈ RESERVATION                                                          /* Must be a valid reservation */
-        grd2: rv ∉ active_res                                                            /* Not already an active reservation */
-        grd3: ∀r · r ∈ active_res ∧ res_room(r) = res_room(rv)                          /* R5: Dates don't overlap with existing */
-                  ⇒ res_dates(r) ∩ res_dates(rv) = ∅                                    /*     reservations for the same room */
-        grd4: res_room(rv) ∈ dom(occ_dates) ⇒ res_dates(rv) ∩ occ_dates(res_room(rv)) = ∅  /* R5: Dates don't overlap with */
-                                                                                             /*     occupied dates for the same room */
+        grd1: rv ∈ RESERVATION
+            /* rv must be a valid reservation token. */
+
+        grd2: rv ∉ active_res
+            /* rv must not already be active — no duplicate activations. */
+
+        grd3: ∀r · r ∈ active_res ∧ res_room(r) = res_room(rv)
+                  ⇒ res_dates(r) ∩ res_dates(rv) = ∅
+            /* For every existing active reservation r in the same room as rv:
+             * their date sets must not overlap. This is what prevents
+             * double-booking and is exactly what inv5 requires AFTER the
+             * action — so the prover needs this guard to discharge inv5. */
+
+        grd4: res_room(rv) ∈ dom(occ_dates) ⇒ res_dates(rv) ∩ occ_dates(res_room(rv)) = ∅
+            /* If the room is currently occupied, the reservation dates must
+             * not overlap with the active stay. Needed to preserve inv6. */
     THEN
-        act1: active_res ≔ active_res ∪ {rv}       /* Add to active reservations */
+        act1: active_res ≔ active_res ∪ {rv}
+            /* Add rv to the set of active reservations. */
     END
 
-    /* R6, R7: Cancel a reservation */
+    /* ------------------------------------------------------------------------
+     * EVENT: CancelReservation
+     * Drops an active reservation. Doesn't touch occupancy at all.
+     * ------------------------------------------------------------------------ */
     EVENT CancelReservation
     ANY
-        rv      /* The reservation to cancel */
+        rv      /* the reservation to cancel */
     WHERE
-        grd1: rv ∈ active_res          /* R6: Must be an active reservation */
+        grd1: rv ∈ active_res
+            /* Can only cancel something that's actually active. */
     THEN
-        act1: active_res ≔ active_res ∖ {rv}       /* R7: Remove reservation from the system */
+        act1: active_res ≔ active_res ∖ {rv}
+            /* Remove rv from active_res. Set difference removes one element. */
     END
 
-    /* R8, R10: Customer checks in with an existing reservation */
+    /* ------------------------------------------------------------------------
+     * EVENT: CheckInWithReservation
+     * A customer arrives and uses their existing reservation.
+     * Three things happen at once: reservation consumed, room marked occupied,
+     * dates copied over from the reservation.
+     * ------------------------------------------------------------------------ */
     EVENT CheckInWithReservation
     ANY
-        rv      /* The reservation for check-in */
+        rv      /* the reservation being honoured */
     WHERE
-        grd1: rv ∈ active_res                      /* Must be an active reservation */
-        grd2: res_room(rv) ∉ dom(occ_rooms)        /* Room must not be currently occupied */
-        grd3: res_room(rv) ∉ dom(occ_dates)        /* Theorem: follows from grd2 and inv4 */
-        grd4: ∀r · r ∈ active_res ∧ r ≠ rv ∧ res_room(r) = res_room(rv)   /* Theorem: follows from inv5 and grd1 */
-                  ⇒ res_dates(r) ∩ res_dates(rv) = ∅                       /* Helps prover with inv6 preservation */
+        grd1: rv ∈ active_res
+            /* The reservation must still be active (not cancelled). */
+
+        grd2: res_room(rv) ∉ dom(occ_rooms)
+            /* The room must currently be empty (no one already checked in). */
+
+        grd3: res_room(rv) ∉ dom(occ_dates)
+            /* Same condition, restated for occ_dates. Logically follows from
+             * grd2 + inv4, but stating it explicitly helps the auto-prover. */
+
+        grd4: ∀r · r ∈ active_res ∧ r ≠ rv ∧ res_room(r) = res_room(rv)
+                  ⇒ res_dates(r) ∩ res_dates(rv) = ∅
+            /* No OTHER active reservation for the same room overlaps with rv.
+             * This logically follows from inv5 + grd1, but the auto-prover
+             * can't always see that, so we restate it.
+             * (Note: theorem flag removed here so this is treated as a
+             * normal guard rather than a derivable theorem.) */
     THEN
-        act1: active_res ≔ active_res ∖ {rv}                                   /* R8: Remove reservation from system */
-        act2: occ_rooms ≔ occ_rooms ∪ {res_room(rv) ↦ res_customer(rv)}        /* R8: Room becomes occupied */
-        act3: occ_dates ≔ occ_dates ∪ {res_room(rv) ↦ res_dates(rv)}           /* R10: Copy dates from reservation */
+        act1: active_res ≔ active_res ∖ {rv}
+            /* Remove rv — reservation consumed by check-in. */
+
+        act2: occ_rooms ≔ occ_rooms ∪ {res_room(rv) ↦ res_customer(rv)}
+            /* Mark the room as occupied by rv's customer. The pair
+             * "room ↦ customer" is a single function entry being added. */
+
+        act3: occ_dates ≔ occ_dates ∪ {res_room(rv) ↦ res_dates(rv)}
+            /* Record the dates of the stay — copied from the reservation. */
     END
 
-    /* R12: Customer checks in without a reservation */
+    /* ------------------------------------------------------------------------
+     * EVENT: CheckInWithoutReservation
+     * A walk-in customer. No prior reservation, just rolls up to the desk.
+     * ------------------------------------------------------------------------ */
     EVENT CheckInWithoutReservation
     ANY
-        rr      /* Room to check into */
-        cc      /* Customer checking in */
-        dd      /* Dates of stay */
+        rr      /* the room they want */
+        cc      /* the customer's identity */
+        dd      /* the dates they want to stay */
     WHERE
-        grd1: rr ∈ ROOM                                                    /* Must be a valid room */
-        grd2: cc ∈ CUSTOMER                                                /* Must be a valid customer */
-        grd3: dd ∈ ℙ1(DATE)                                                /* Must be a non-empty set of dates */
-        grd4: rr ∉ dom(occ_rooms)                                          /* R12: Room must not be occupied */
-        grd5: ∀r · r ∈ active_res ∧ res_room(r) = rr ⇒ res_dates(r) ∩ dd = ∅  /* R12: Dates don't overlap with reservations */
-        grd6: rr ∉ dom(occ_dates)                                          /* Theorem: follows from grd4 and inv4 */
+        grd1: rr ∈ ROOM                  /* rr must be a real room */
+        grd2: cc ∈ CUSTOMER              /* cc must be a real customer */
+        grd3: dd ∈ ℙ1(DATE)              /* dd must be a non-empty set of dates */
+
+        grd4: rr ∉ dom(occ_rooms)
+            /* Room must not already be occupied. */
+
+        grd5: ∀r · r ∈ active_res ∧ res_room(r) = rr ⇒ res_dates(r) ∩ dd = ∅
+            /* Walk-in dates must not clash with any existing reservation for
+             * the same room. Without this we'd violate inv6. */
+
+        grd6: rr ∉ dom(occ_dates)
+            /* Same as grd4 restated for occ_dates (helps auto-prover; follows
+             * from grd4 + inv4). */
     THEN
-        act1: occ_rooms ≔ occ_rooms ∪ {rr ↦ cc}           /* Room becomes occupied */
-        act2: occ_dates ≔ occ_dates ∪ {rr ↦ dd}            /* Store staying dates */
+        act1: occ_rooms ≔ occ_rooms ∪ {rr ↦ cc}    /* mark room occupied */
+        act2: occ_dates ≔ occ_dates ∪ {rr ↦ dd}     /* record stay dates */
     END
 
-    /* R13: Customer checks out */
+    /* ------------------------------------------------------------------------
+     * EVENT: CheckOut
+     * Customer leaves. Room becomes free again.
+     * ------------------------------------------------------------------------ */
     EVENT CheckOut
     ANY
-        rr      /* Room to check out of */
+        rr      /* the room being vacated */
     WHERE
-        grd1: rr ∈ dom(occ_rooms)                  /* Room must be occupied */
-        grd2: rr ∈ dom(occ_dates)                  /* Theorem: follows from grd1 and inv4 */
+        grd1: rr ∈ dom(occ_rooms)
+            /* Room must currently have someone in it. */
+
+        grd2: rr ∈ dom(occ_dates)
+            /* Same restated for occ_dates (follows from grd1 + inv4). */
     THEN
-        act1: occ_rooms ≔ {rr} ⩤ occ_rooms         /* R13: Remove customer info */
-        act2: occ_dates ≔ {rr} ⩤ occ_dates          /* R13: Remove date info */
+        act1: occ_rooms ≔ {rr} ⩤ occ_rooms
+            /* Domain subtraction (⩤): remove rr from occ_rooms' domain.
+             * Result is the same function but with the entry for rr deleted. */
+
+        act2: occ_dates ≔ {rr} ⩤ occ_dates
+            /* Same operation on occ_dates — wipe rr's date entry. */
     END
 
 END

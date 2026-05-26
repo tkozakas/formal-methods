@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <org.eventb.core.contextFile org.eventb.core.configuration="org.eventb.core.fwd" version="3">
-    <org.eventb.core.carrierSet name="(" org.eventb.core.identifier="CITIES"/>
-    <org.eventb.core.carrierSet name=")" org.eventb.core.identifier="FLIGHTS"/>
-    <org.eventb.core.carrierSet name="*" org.eventb.core.identifier="DATES"/>
-    <org.eventb.core.constant name="+" org.eventb.core.identifier="dep"/>
-    <org.eventb.core.constant name="," org.eventb.core.identifier="dest"/>
-    <org.eventb.core.constant name="-" org.eventb.core.identifier="seats"/>
-    <org.eventb.core.constant name="." org.eventb.core.identifier="schedule"/>
-    <org.eventb.core.axiom name="/" org.eventb.core.label="axm1" org.eventb.core.predicate="dep ∈ FLIGHTS → CITIES"/>
-    <org.eventb.core.axiom name="0" org.eventb.core.label="axm2" org.eventb.core.predicate="dest ∈ FLIGHTS → CITIES"/>
-    <org.eventb.core.axiom name="1" org.eventb.core.label="axm3" org.eventb.core.predicate="∀f · f ∈ FLIGHTS ⇒ dep(f) ≠ dest(f)"/>
-    <org.eventb.core.axiom name="2" org.eventb.core.label="axm4" org.eventb.core.predicate="seats ∈ FLIGHTS → ℕ1"/>
-    <org.eventb.core.axiom name="3" org.eventb.core.label="axm5" org.eventb.core.predicate="schedule ∈ FLIGHTS ↔ DATES"/>
+    <org.eventb.core.carrierSet name="'" org.eventb.core.identifier="CITIES" org.eventb.core.comment="All cities served by the airline"/>
+    <org.eventb.core.carrierSet name="(" org.eventb.core.identifier="FLIGHTS" org.eventb.core.comment="All possible flights"/>
+    <org.eventb.core.carrierSet name=")" org.eventb.core.identifier="DATES" org.eventb.core.comment="All calendar dates"/>
+    <org.eventb.core.constant name="*" org.eventb.core.identifier="dep" org.eventb.core.comment="Departure city of each flight (req 2)"/>
+    <org.eventb.core.constant name="+" org.eventb.core.identifier="dest" org.eventb.core.comment="Destination city of each flight (req 2)"/>
+    <org.eventb.core.constant name="," org.eventb.core.identifier="seats" org.eventb.core.comment="Plane capacity per flight (req 6)"/>
+    <org.eventb.core.constant name="-" org.eventb.core.identifier="schedule" org.eventb.core.comment="Which flights run on which dates (req 4,5)"/>
+    <org.eventb.core.constant name="." org.eventb.core.identifier="price" org.eventb.core.comment="Ticket price per (flight,date) (req 10)"/>
+    <org.eventb.core.axiom name="/" org.eventb.core.label="axm1" org.eventb.core.predicate="dep ∈ FLIGHTS → CITIES" org.eventb.core.comment="dep is a total function"/>
+    <org.eventb.core.axiom name="0" org.eventb.core.label="axm2" org.eventb.core.predicate="dest ∈ FLIGHTS → CITIES" org.eventb.core.comment="dest is a total function"/>
+    <org.eventb.core.axiom name="1" org.eventb.core.label="axm3" org.eventb.core.predicate="∀f · f ∈ FLIGHTS ⇒ dep(f) ≠ dest(f)" org.eventb.core.comment="Departure and destination differ (req 3)"/>
+    <org.eventb.core.axiom name="2" org.eventb.core.label="axm4" org.eventb.core.predicate="seats ∈ FLIGHTS → ℕ1" org.eventb.core.comment="Every flight has at least 1 seat"/>
+    <org.eventb.core.axiom name="3" org.eventb.core.label="axm5" org.eventb.core.predicate="schedule ∈ FLIGHTS ↔ DATES" org.eventb.core.comment="Schedule relates flights to dates"/>
+    <org.eventb.core.axiom name="4" org.eventb.core.label="axm6" org.eventb.core.predicate="price ∈ schedule → ℕ" org.eventb.core.comment="Price defined only for scheduled (flight,date) pairs"/>
 </org.eventb.core.contextFile>
