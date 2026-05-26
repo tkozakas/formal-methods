@@ -63,14 +63,14 @@ OPERATIONS
             max_total : NATURAL
         THEN
             ANY c2, f1, f2 WHERE
-                c2 : CITIES & c2 /= c1 & c2 /= c3 &
-                f1 : FLIGHTS & f2 : FLIGHTS & f1 /= f2 &
-                dep(f1) = c1 & dest(f1) = c2 &
-                dep(f2) = c2 & dest(f2) = c3 &
-                f1|->d : schedule & f2|->d : schedule &
-                available(f1|->d) >= 1 &
-                available(f2|->d) >= 1 &
-                price(f1|->d) + price(f2|->d) <= max_total
+                c2 : CITIES & c2 /= c1 & c2 /= c3 &           /* tarpinis miestas, skiriasi nuo c1 ir c3 */
+                f1 : FLIGHTS & f2 : FLIGHTS & f1 /= f2 &      /* du skirtingi skrydžiai */
+                dep(f1) = c1 & dest(f1) = c2 &                /* 1-oji atkarpa: c1 -> c2 */
+                dep(f2) = c2 & dest(f2) = c3 &                /* 2-oji atkarpa: c2 -> c3 */
+                f1|->d : schedule & f2|->d : schedule &       /* abu skrydžiai vyksta datą d */
+                available(f1|->d) >= 1 &                       /* yra laisva vieta 1-oje atkarpoje */
+                available(f2|->d) >= 1 &                       /* yra laisva vieta 2-oje atkarpoje */
+                price(f1|->d) + price(f2|->d) <= max_total    /* bendra kaina telpa į biudžetą */
             THEN
                 /* <+ yra funkcijos perrašymas: atnaujina tik šiuos du įrašus */
                 available := available <+ {
