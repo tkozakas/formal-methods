@@ -74,8 +74,8 @@ OPERATIONS
             THEN
                 /* <+ is function override: update only these two entries */
                 available := available <+ {
-                    f1|->d |-> available(f1|->d) - 1,
-                    f2|->d |-> available(f2|->d) - 1
+                    f1|->d |-> available(f1|->d) - 1,   /* leg 1: one fewer free seat */
+                    f2|->d |-> available(f2|->d) - 1    /* leg 2: one fewer free seat */
                 }
             END
         END
