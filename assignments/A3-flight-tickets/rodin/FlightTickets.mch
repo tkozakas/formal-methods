@@ -1,17 +1,17 @@
 MACHINE FlightTickets
-/* Flight Ticket System — flat B machine for ProB verification.
- * Mirrors the Event-B project (C0 static data + M0 dynamic state). */
+/* Skrydžių bilietų sistema — plokščia B mašina ProB verifikacijai.
+ * Atspindi Event-B projektą (C0 statiniai duomenys + M0 dinaminė būsena). */
 
 SETS
     CITIES; FLIGHTS; DATES
 
 ABSTRACT_CONSTANTS
-    dep, dest, seats, schedule, price   /* constants */
+    dep, dest, seats, schedule, price   /* konstantos */
 
 PROPERTIES
     dep      : FLIGHTS --> CITIES &
     dest     : FLIGHTS --> CITIES &
-    /* a flight cannot start and end in the same city */
+    /* skrydis negali prasidėti ir baigtis tame pačiame mieste */
     !f.(f : FLIGHTS => dep(f) /= dest(f)) &
     seats    : FLIGHTS --> NATURAL1 &
     schedule : FLIGHTS <-> DATES &
@@ -22,16 +22,16 @@ VARIABLES
 
 INVARIANT
     available : schedule --> NATURAL &
-    /* free seats never exceed plane capacity */
+    /* laisvų vietų skaičius niekada neviršija lėktuvo talpos */
     !(f,d).(f|->d : schedule => available(f|->d) <= seats(f))
 
 INITIALISATION
-    /* every scheduled flight starts fully empty (all seats free) */
+    /* kiekvienas suplanuotas skrydis pradeda visiškai tuščias (visos vietos laisvos) */
     available := %(f,d).(f|->d : schedule | seats(f))
 
 OPERATIONS
 
-    /* book n seats — guard: flight is scheduled, n >= 1, enough free seats */
+    /* užsakyti n vietų — sąlyga: skrydis suplanuotas, n >= 1, pakanka laisvų vietų */
     book(f, d, n) =
         PRE
             f|->d : schedule &
@@ -41,7 +41,7 @@ OPERATIONS
             available(f|->d) := available(f|->d) - n
         END;
 
-    /* cancel n seats — guard: flight scheduled, n >= 1, doesn't exceed capacity */
+    /* atšaukti n vietų — sąlyga: skrydis suplanuotas, n >= 1, neviršija talpos */
     cancel(f, d, n) =
         PRE
             f|->d : schedule &
@@ -51,10 +51,10 @@ OPERATIONS
             available(f|->d) := available(f|->d) + n
         END;
 
-    /* book a connection c1 -> c2 -> c3 on date d within budget max_total.
-     * guard: pick layover c2 and two distinct flights f1, f2 such that
-     *   legs match the cities, both are scheduled on d,
-     *   each has a free seat, and total price fits the budget */
+    /* užsakyti jungiamąjį skrydį c1 -> c2 -> c3 datą d neviršijant biudžeto max_total.
+     * sąlyga: pasirinkti tarpinį miestą c2 ir du skirtingus skrydžius f1, f2 taip, kad
+     *   atkarpos atitiktų miestus, abu būtų suplanuoti datą d,
+     *   kiekvienas turėtų laisvą vietą, o bendra kaina tilptų į biudžetą */
     book_connecting(c1, c3, d, max_total) =
         PRE
             c1 : CITIES & c3 : CITIES &
@@ -72,10 +72,10 @@ OPERATIONS
                 available(f2|->d) >= 1 &
                 price(f1|->d) + price(f2|->d) <= max_total
             THEN
-                /* <+ is function override: update only these two entries */
+                /* <+ yra funkcijos perrašymas: atnaujina tik šiuos du įrašus */
                 available := available <+ {
-                    f1|->d |-> available(f1|->d) - 1,   /* leg 1: one fewer free seat */
-                    f2|->d |-> available(f2|->d) - 1    /* leg 2: one fewer free seat */
+                    f1|->d |-> available(f1|->d) - 1,   /* 1-oji atkarpa: viena vieta mažiau */
+                    f2|->d |-> available(f2|->d) - 1    /* 2-oji atkarpa: viena vieta mažiau */
                 }
             END
         END
